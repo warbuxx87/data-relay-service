@@ -2,5 +2,10 @@
   "ListenIp": "127.0.0.1",
   "ListenPort": 7070,
   "SentryUrl": "",
+  "RedisIP": "localhost",
+  "RedisPort": 6379,
+  "DataRelayDiscoveryServiceUrl" : "http://localhost:7060",
+  "DataRelayDiscoveryRegisterKey" : "registerme",
+  "DataRelayDiscoveryServiceAlias" : "SomeAlias",
   "LogLevel": 1
 }

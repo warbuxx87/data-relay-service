@@ -2,24 +2,28 @@ package util
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/tkanos/gonfig"
 )
 
 type Configuration struct {
-
 	ListenIp   string
 	ListenPort int
 
 	SentryUrl string
+	RedisIP   string
+	RedisPort int
+
+	DataRelayDiscoveryServiceUrl   string
+	DataRelayDiscoveryRegisterKey  string
+	DataRelayDiscoveryServiceAlias string
 
 	// 0 = Info, 1 = Debug
 	LogLevel int
 }
 
 type ActionResult struct {
-
 }
 
 func LoadConfigurationFile() (*Configuration, error) {
@@ -44,7 +48,6 @@ func ShowBanner() {
  / ___ |/ / ,< /  __/ / / / / / /  /_____/  / /_/ / _, _/___/ /
 /_/  |_/_/_/|_|\___/_/ /_/ /_/_/           /_____/_/ |_|/____/
 		`)
-
 
 	fmt.Printf("- Alkemi Data Relay Service - V 0.0.1")
 	fmt.Printf("\n")
