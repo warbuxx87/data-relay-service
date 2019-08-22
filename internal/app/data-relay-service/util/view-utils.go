@@ -1,10 +1,10 @@
 package util
 
 import (
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/models"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/models"
 	"github.com/jinzhu/gorm"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 )

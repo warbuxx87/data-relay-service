@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/api"
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/models"
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/util"
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/views"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/api"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/models"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/views"
 	"encoding/gob"
 	"github.com/sirupsen/logrus"
 	"github.com/getsentry/raven-go"

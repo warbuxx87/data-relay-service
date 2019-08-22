@@ -1,4 +1,4 @@
-module bitbucket.org/project-alkemi/data-relay
+module bitbucket.org/project-alkemi/data-relay-service
 
 go 1.12
 

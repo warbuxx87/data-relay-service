@@ -1,15 +1,15 @@
 package api
 
 import (
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/forms"
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/responses"
-	"bitbucket.org/project-alkemi/data-relay/internal/app/data-relay/util"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/forms"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/responses"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
 	"crypto/sha256"
 	"fmt"
 	"github.com/getsentry/raven-go"
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
