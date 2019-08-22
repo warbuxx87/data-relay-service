@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/managers"
 	"bitbucket.org/project-alkemi/dr-discovery-service-api"
 
 	"github.com/go-redis/redis"
@@ -10,6 +11,7 @@ import (
 type DataContext struct {
 	Database            *gorm.DB
 	Config              *Configuration
-	Redis               *redis.Client
+	RedisClient         *redis.Client
 	DiscoveryServiceAPI *dr_discovery_service_api.DrDiscoveryServiceApi
+	DataExchangeMgr     *managers.DataExchangeManager
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/api"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/managers"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/models"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/views"
@@ -88,13 +89,13 @@ func main() {
 		}
 
 		// Create the redis connection
-		dataContext.Redis = redis.NewClient(&redis.Options{
+		dataContext.RedisClient = redis.NewClient(&redis.Options{
 			Addr:     config.RedisIP + ":" + strconv.Itoa(config.RedisPort),
 			Password: "", // no password set
 			DB:       0,  // use default DB
 		})
 
-		_, redisConnectionError := dataContext.Redis.Ping().Result()
+		_, redisConnectionError := dataContext.RedisClient.Ping().Result()
 
 		if redisConnectionError != nil {
 			logrus.Info("Failed to connect to redis server")
@@ -106,7 +107,7 @@ func main() {
 		}
 
 		defer func() {
-			redisConnCloseError := dataContext.Redis.Close()
+			redisConnCloseError := dataContext.RedisClient.Close()
 
 			if redisConnCloseError != nil {
 				logrus.Error(redisConnCloseError)
@@ -147,6 +148,10 @@ func main() {
 				logrus.Info("UnRegistered with discovery service")
 			}
 		}()
+
+		dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
+
+		go dataContext.DataExchangeMgr.ProcessServiceUpdates()
 
 		// Start the checkin function. We checkin every 10 seconds
 		go func() {
