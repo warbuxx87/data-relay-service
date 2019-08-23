@@ -124,6 +124,24 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 				} else {
 
+					rawMessage.FromDataRelay = true
+
+					// Broadcast to all connected tls clients
+					for key, _ := range *tlsServerManager.ConnectedClients {
+
+						if (*key).RemoteAddr().String() != (*conn).RemoteAddr().String() {
+							clientEnc := gob.NewEncoder(*key)
+
+							writeDataToSocketError := clientEnc.Encode(rawMessage)
+
+							if writeDataToSocketError != nil {
+								logrus.Error(writeDataToSocketError)
+							}
+						}
+
+					}
+
+					// Send message to other data relays
 					publishError := tlsServerManager.RedisClient.Publish(tlsServerManager.ServiceUUID, base64.StdEncoding.EncodeToString(buffer.Bytes())).Err()
 
 					if publishError != nil {
