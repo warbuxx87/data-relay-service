@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/api"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/managers"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/models"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/tls-server"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/views"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
@@ -151,7 +152,7 @@ func main() {
 
 		// Create the server manager
 
-		dataContext.TLSServerManager = managers.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.RedisClient)
+		dataContext.TLSServerManager = tls_server.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.RedisClient)
 
 		dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.TLSServerManager, dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
 

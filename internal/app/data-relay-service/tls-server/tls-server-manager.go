@@ -1,4 +1,4 @@
-package managers
+package tls_server
 
 import (
 	common_message_consts "bitbucket.org/project-alkemi/common-message-pkg/common-message-consts"
@@ -19,6 +19,7 @@ import (
 type TLSServerManager struct {
 	ConnectedClients *map[*net.Conn]bool
 	RedisClient      *redis.Client
+	DataChannels     *DataChannelManager
 	ServiceUUID      string
 }
 
@@ -30,7 +31,7 @@ func CreateTLSServerManager(serviceUUID string, redisClient *redis.Client) *TLSS
 	tlsServerManager.ConnectedClients = &myMap
 	tlsServerManager.RedisClient = redisClient
 	tlsServerManager.ServiceUUID = serviceUUID
-
+	tlsServerManager.DataChannels = CreateDataChannelManager()
 	return &tlsServerManager
 }
 
@@ -99,6 +100,11 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 		if rawMessageUnMarshalError != nil {
 
 			logrus.Info("Client Disconnected: " + (*conn).RemoteAddr().String())
+			removeDataChannelError := tlsServerManager.DataChannels.RemoveDataChannel((*conn).RemoteAddr().String())
+
+			if removeDataChannelError != nil {
+				logrus.Warn(removeDataChannelError)
+			}
 
 			delete(*tlsServerManager.ConnectedClients, conn)
 
@@ -110,6 +116,14 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 				logrus.Debug("Ping Message Received From: " + (*conn).RemoteAddr().String())
 				tlsServerManager.TLSHandlePingMessage(conn, rawMessage)
+
+			} else if rawMessage.MessageType == common_message_consts.MessageType_SubscribeDataChannelMessage {
+				logrus.Debug("Subscribe data channel message received from: " + (*conn).RemoteAddr().String())
+				tlsServerManager.TLSHandleSubscribeDataMessage(conn, tlsServerManager.DataChannels, rawMessage)
+
+			} else if rawMessage.MessageType == common_message_consts.MessageType_UnSubscribeDataChannelMessage {
+				logrus.Debug("UnSubscribe data channel message received from: " + (*conn).RemoteAddr().String())
+				tlsServerManager.TLSHandleUnSubscribeDataMessage(conn, tlsServerManager.DataChannels, rawMessage)
 
 			} else {
 
@@ -130,12 +144,15 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 					for key, _ := range *tlsServerManager.ConnectedClients {
 
 						if (*key).RemoteAddr().String() != (*conn).RemoteAddr().String() {
-							clientEnc := gob.NewEncoder(*key)
+							if tlsServerManager.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
 
-							writeDataToSocketError := clientEnc.Encode(rawMessage)
+								clientEnc := gob.NewEncoder(*key)
 
-							if writeDataToSocketError != nil {
-								logrus.Error(writeDataToSocketError)
+								writeDataToSocketError := clientEnc.Encode(rawMessage)
+
+								if writeDataToSocketError != nil {
+									logrus.Error(writeDataToSocketError)
+								}
 							}
 						}
 
@@ -180,6 +197,78 @@ func (tlsServerManager *TLSServerManager) TLSHandlePingMessage(clientConn *net.C
 		}
 
 		writeDataToSocketError := clientEnc.Encode(rawMessageModel)
+
+		if writeDataToSocketError != nil {
+			logrus.Error(writeDataToSocketError)
+			return
+		}
+
+	}
+}
+
+func (tlsServerManager *TLSServerManager) TLSHandleSubscribeDataMessage(clientConn *net.Conn, dataChannelManager *DataChannelManager, message common_message_models.RawMessageModel) {
+
+	if clientConn != nil {
+
+		clientEnc := gob.NewEncoder(*clientConn)
+
+		var subscribeDataChannelMessageModel common_message_models.SubscribeDataChannelMessageModel
+		subscribeDataChannelMessageDataError := gob.NewDecoder(bytes.NewBuffer(message.RawMessageBytes)).Decode(&subscribeDataChannelMessageModel)
+
+		if subscribeDataChannelMessageDataError != nil {
+			logrus.Error(subscribeDataChannelMessageDataError)
+			return
+		}
+
+		addChannelSubscriptionError := dataChannelManager.AddChannelSubscription((*clientConn).RemoteAddr().String(), subscribeDataChannelMessageModel.DataChannelType)
+
+		if addChannelSubscriptionError != nil {
+
+			writeDataToSocketError := clientEnc.Encode(CreateRequestFailureMessage(message.UUID, addChannelSubscriptionError.Error()))
+
+			if writeDataToSocketError != nil {
+				logrus.Error(writeDataToSocketError)
+				return
+			}
+		}
+
+		writeDataToSocketError := clientEnc.Encode(CreateRequestSuccessMessage(message.UUID, ""))
+
+		if writeDataToSocketError != nil {
+			logrus.Error(writeDataToSocketError)
+			return
+		}
+
+	}
+}
+
+func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(clientConn *net.Conn, dataChannelManager *DataChannelManager, message common_message_models.RawMessageModel) {
+
+	if clientConn != nil {
+
+		clientEnc := gob.NewEncoder(*clientConn)
+
+		var unSubscribeDataChannelMessageModel common_message_models.UnSubscribeDataChannelMessageModel
+		unSubscribeDataChannelMessageDataError := gob.NewDecoder(bytes.NewBuffer(message.RawMessageBytes)).Decode(&unSubscribeDataChannelMessageModel)
+
+		if unSubscribeDataChannelMessageDataError != nil {
+			logrus.Error(unSubscribeDataChannelMessageDataError)
+			return
+		}
+
+		removeChannelSubscriptionError := dataChannelManager.RemoveChannelSubscription((*clientConn).RemoteAddr().String(), unSubscribeDataChannelMessageModel.DataChannelType)
+
+		if removeChannelSubscriptionError != nil {
+
+			writeDataToSocketError := clientEnc.Encode(CreateRequestFailureMessage(message.UUID, removeChannelSubscriptionError.Error()))
+
+			if writeDataToSocketError != nil {
+				logrus.Error(writeDataToSocketError)
+				return
+			}
+		}
+
+		writeDataToSocketError := clientEnc.Encode(CreateRequestSuccessMessage(message.UUID, ""))
 
 		if writeDataToSocketError != nil {
 			logrus.Error(writeDataToSocketError)

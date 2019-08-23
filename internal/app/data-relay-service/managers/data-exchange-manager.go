@@ -1,7 +1,9 @@
 package managers
 
 import (
+	common_message_consts "bitbucket.org/project-alkemi/common-message-pkg/common-message-consts"
 	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/tls-server"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
 	"bytes"
 	"encoding/base64"
@@ -18,10 +20,10 @@ type DataExchangeManager struct {
 	CurrentSubscriptions   map[string]*redis.PubSub
 	DiscoveryServiceApi    *dr_discovery_service_api.DrDiscoveryServiceApi
 	LastServiceUpdateCheck time.Time
-	TLSServerMgr           *TLSServerManager
+	TLSServerMgr           *tls_server.TLSServerManager
 }
 
-func CreateDataExchangeManager(tlsServerManager *TLSServerManager, redisClient *redis.Client, discoveryServiceApi *dr_discovery_service_api.DrDiscoveryServiceApi) *DataExchangeManager {
+func CreateDataExchangeManager(tlsServerManager *tls_server.TLSServerManager, redisClient *redis.Client, discoveryServiceApi *dr_discovery_service_api.DrDiscoveryServiceApi) *DataExchangeManager {
 
 	return &DataExchangeManager{
 		RedisClient:          redisClient,
@@ -67,16 +69,20 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 				}
 
 				rawMessage.FromDataRelay = true
+				rawMessage.FromDataRelayAlias = dataExchangeManager.DiscoveryServiceApi.Alias
 
 				// Broadcast to all clients
 				for key, _ := range *dataExchangeManager.TLSServerMgr.ConnectedClients {
 
-					clientEnc := gob.NewEncoder(*key)
+					if dataExchangeManager.TLSServerMgr.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
 
-					writeDataToSocketError := clientEnc.Encode(rawMessage)
+						clientEnc := gob.NewEncoder(*key)
 
-					if writeDataToSocketError != nil {
-						logrus.Error(writeDataToSocketError)
+						writeDataToSocketError := clientEnc.Encode(rawMessage)
+
+						if writeDataToSocketError != nil {
+							logrus.Error(writeDataToSocketError)
+						}
 					}
 
 				}
@@ -86,7 +92,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 		}
 
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(1) * time.Millisecond)
 
 	}
 }

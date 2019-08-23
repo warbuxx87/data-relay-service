@@ -81,6 +81,28 @@ func main() {
 
 		enc := gob.NewEncoder(conn)
 
+		zerp2 := common_message_models.SubscribeDataChannelMessageModel{
+			DataChannelType: common_message_consts.DataChannelType_AllData,
+		}
+
+		buffer2 := bytes.Buffer{}
+
+		gob.NewEncoder(&buffer2).Encode(zerp2)
+
+		herpDerp2 := common_message_models.RawMessageModel{
+			TimeStamp:       time.Now().UTC(),
+			UUID:            uuid.NewV4().String(),
+			AccessUUID:      "0fb4a0a6-0a96-4d2d-af62-4d09c2208c85",
+			AccessToken:     "e93b8d10-7880-41ab-a602-5595ba197c44",
+			MessageType:     common_message_consts.MessageType_SubscribeDataChannelMessage,
+			RawMessageBytes: buffer2.Bytes()}
+
+		errEnc2 := enc.Encode(herpDerp2)
+
+		if errEnc2 != nil {
+			logrus.Error(errEnc2)
+		}
+
 		// Send price update
 		zerp := common_message_models.OrderFilledMessageModel{
 			TimeStamp:      time.Now().UTC(),
@@ -110,25 +132,30 @@ func main() {
 			logrus.Error(errEnc)
 		}
 
-		if errEnc != nil {
-			logrus.Error(errEnc)
-		}
+		go func() {
+			for {
+				dec := gob.NewDecoder(conn)
+
+				var rawMessage common_message_models.RawMessageModel
+				rawMessageUnMarshalError := dec.Decode(&rawMessage)
+
+				if rawMessageUnMarshalError != nil {
+					logrus.Error(rawMessageUnMarshalError)
+				}
+
+				if rawMessage.FromDataRelay == true {
+					logrus.Info("Message From Relay : "+rawMessage.FromDataRelayAlias+" "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
+				} else {
+					logrus.Info("Message: "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
+
+				}
+			}
+		}()
 
 		for {
 
-			dec := gob.NewDecoder(conn)
-
-			var rawMessage common_message_models.RawMessageModel
-			rawMessageUnMarshalError := dec.Decode(&rawMessage)
-
-			if rawMessageUnMarshalError != nil {
-				logrus.Error(rawMessageUnMarshalError)
-			}
-
-			logrus.Info(rawMessage.MessageType)
-
 			//logrus.Println(rawMessage.MessageType)
-			time.Sleep(time.Duration(150) * time.Millisecond)
+			time.Sleep(time.Duration(100) * time.Millisecond)
 
 			// Send price update
 			zerp := common_message_models.OrderFilledMessageModel{

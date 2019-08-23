@@ -2,6 +2,7 @@ package util
 
 import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/managers"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/tls-server"
 	"bitbucket.org/project-alkemi/dr-discovery-service-api"
 
 	"github.com/go-redis/redis"
@@ -14,5 +15,5 @@ type DataContext struct {
 	RedisClient         *redis.Client
 	DiscoveryServiceAPI *dr_discovery_service_api.DrDiscoveryServiceApi
 	DataExchangeMgr     *managers.DataExchangeManager
-	TLSServerManager    *managers.TLSServerManager
+	TLSServerManager    *tls_server.TLSServerManager
 }
