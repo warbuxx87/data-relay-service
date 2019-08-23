@@ -1,7 +1,11 @@
 package managers
 
 import (
+	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
+	"bytes"
+	"encoding/base64"
+	"encoding/gob"
 	"github.com/getsentry/raven-go"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -14,13 +18,15 @@ type DataExchangeManager struct {
 	CurrentSubscriptions   map[string]*redis.PubSub
 	DiscoveryServiceApi    *dr_discovery_service_api.DrDiscoveryServiceApi
 	LastServiceUpdateCheck time.Time
+	TLSServerMgr           *TLSServerManager
 }
 
-func CreateDataExchangeManager(redisClient *redis.Client, discoveryServiceApi *dr_discovery_service_api.DrDiscoveryServiceApi) *DataExchangeManager {
+func CreateDataExchangeManager(tlsServerManager *TLSServerManager, redisClient *redis.Client, discoveryServiceApi *dr_discovery_service_api.DrDiscoveryServiceApi) *DataExchangeManager {
 
 	return &DataExchangeManager{
 		RedisClient:          redisClient,
 		DiscoveryServiceApi:  discoveryServiceApi,
+		TLSServerMgr:         tlsServerManager,
 		CurrentSubscriptions: make(map[string]*redis.PubSub),
 	}
 }
@@ -40,13 +46,42 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 		// Listen on data channels for response
 
 		for key, value := range dataExchangeManager.CurrentSubscriptions {
-			logrus.Info("Updating key: ", key)
 
 			select {
 			case msg := <-value.Channel():
-				logrus.Info("Got : " + msg.Payload)
+
+				logrus.Info("Got payload from : " + key)
+
+				decodedBytes, decodedBytesError := base64.StdEncoding.DecodeString(msg.Payload)
+
+				if decodedBytesError != nil {
+					logrus.Error(decodedBytesError)
+				}
+
+				var rawMessage common_message_models.RawMessageModel
+
+				orderFilledMessageMarshalError := gob.NewDecoder(bytes.NewBuffer(decodedBytes)).Decode(&rawMessage)
+
+				if orderFilledMessageMarshalError != nil {
+					logrus.Error(orderFilledMessageMarshalError)
+				}
+
+				rawMessage.FromDataRelay = true
+
+				// Broadcast to all clients
+				for key, _ := range *dataExchangeManager.TLSServerMgr.ConnectedClients {
+
+					clientEnc := gob.NewEncoder(*key)
+
+					writeDataToSocketError := clientEnc.Encode(rawMessage)
+
+					if writeDataToSocketError != nil {
+						logrus.Error(writeDataToSocketError)
+					}
+
+				}
 			default:
-				logrus.Info("no activity")
+				break
 			}
 
 		}

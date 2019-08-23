@@ -149,7 +149,11 @@ func main() {
 			}
 		}()
 
-		dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
+		// Create the server manager
+
+		dataContext.TLSServerManager = managers.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.RedisClient)
+
+		dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.TLSServerManager, dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
 
 		go dataContext.DataExchangeMgr.ProcessServiceUpdates()
 
@@ -174,10 +178,6 @@ func main() {
 				time.Sleep(time.Duration(10) * time.Second)
 			}
 		}()
-
-		// Create the server manager
-
-		dataContext.TLSServerManager = managers.CreateServerManager(dataContext.RedisClient)
 
 		e := echo.New()
 		e.Debug = true

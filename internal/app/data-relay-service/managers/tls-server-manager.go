@@ -5,8 +5,10 @@ import (
 	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
+	"github.com/getsentry/raven-go"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -16,19 +18,20 @@ import (
 
 type TLSServerManager struct {
 	ConnectedClients *map[*net.Conn]bool
-
-	RedisClient *redis.Client
+	RedisClient      *redis.Client
+	ServiceUUID      string
 }
 
-func CreateServerManager(redisClient *redis.Client) *TLSServerManager {
+func CreateTLSServerManager(serviceUUID string, redisClient *redis.Client) *TLSServerManager {
 
-	serverManager := TLSServerManager{}
+	tlsServerManager := TLSServerManager{}
 
 	myMap := make(map[*net.Conn]bool)
-	serverManager.ConnectedClients = &myMap
-	serverManager.RedisClient = redisClient
+	tlsServerManager.ConnectedClients = &myMap
+	tlsServerManager.RedisClient = redisClient
+	tlsServerManager.ServiceUUID = serviceUUID
 
-	return &serverManager
+	return &tlsServerManager
 }
 
 func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServerPort int, tlsCertLocation string, tlsKeyLocation string) error {
@@ -73,7 +76,7 @@ func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServ
 
 }
 
-func HandleTLSConnection(serverManager *TLSServerManager, conn *net.Conn) {
+func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 	defer func() {
 		closeConnectionError := (*conn).Close()
@@ -82,7 +85,7 @@ func HandleTLSConnection(serverManager *TLSServerManager, conn *net.Conn) {
 		}
 	}()
 
-	(*serverManager.ConnectedClients)[conn] = true
+	(*tlsServerManager.ConnectedClients)[conn] = true
 
 	logrus.Info("Client Connected: " + (*conn).RemoteAddr().String())
 
@@ -97,7 +100,7 @@ func HandleTLSConnection(serverManager *TLSServerManager, conn *net.Conn) {
 
 			logrus.Info("Client Disconnected: " + (*conn).RemoteAddr().String())
 
-			delete(*serverManager.ConnectedClients, conn)
+			delete(*tlsServerManager.ConnectedClients, conn)
 
 			return
 
@@ -106,11 +109,29 @@ func HandleTLSConnection(serverManager *TLSServerManager, conn *net.Conn) {
 			if rawMessage.MessageType == common_message_consts.MessageType_PingMessage {
 
 				logrus.Debug("Ping Message Received From: " + (*conn).RemoteAddr().String())
-				serverManager.TLSHandlePingMessage(conn, rawMessage)
+				tlsServerManager.TLSHandlePingMessage(conn, rawMessage)
 
+			} else {
+
+				// If not ping pong forward to all clients
+				buffer := bytes.Buffer{}
+
+				encodingError := gob.NewEncoder(&buffer).Encode(rawMessage)
+
+				if encodingError != nil {
+					logrus.Error(encodingError)
+					raven.CaptureError(encodingError, nil)
+
+				} else {
+
+					publishError := tlsServerManager.RedisClient.Publish(tlsServerManager.ServiceUUID, base64.StdEncoding.EncodeToString(buffer.Bytes())).Err()
+
+					if publishError != nil {
+						logrus.Error(publishError)
+						raven.CaptureError(publishError, nil)
+					}
+				}
 			}
-
-			// If not ping pong forward to all clients
 		}
 
 	}
