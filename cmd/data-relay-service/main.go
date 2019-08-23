@@ -175,6 +175,10 @@ func main() {
 			}
 		}()
 
+		// Create the server manager
+
+		dataContext.TLSServerManager = managers.CreateServerManager(dataContext.RedisClient)
+
 		e := echo.New()
 		e.Debug = true
 
@@ -210,6 +214,16 @@ func main() {
 
 		e.GET("/action/logout", api.LogoutAction)
 		e.POST("/action/login", api.LoginAction)
+
+		// Start tls server
+		go func() {
+			startTLSSeverError := dataContext.TLSServerManager.StartSever(dataContext.Config.TLSSeverIp,
+				dataContext.Config.TLSSeverPort, dataContext.Config.TLSSeverCertLocation, dataContext.Config.TLSSeverKeyLocation)
+
+			if startTLSSeverError != nil {
+				logrus.Fatal(startTLSSeverError)
+			}
+		}()
 
 		e.Logger.Fatal(e.Start(config.ListenIp + ":" + strconv.Itoa(config.ListenPort)))
 

@@ -14,4 +14,5 @@ type DataContext struct {
 	RedisClient         *redis.Client
 	DiscoveryServiceAPI *dr_discovery_service_api.DrDiscoveryServiceApi
 	DataExchangeMgr     *managers.DataExchangeManager
+	TLSServerManager    *managers.TLSServerManager
 }

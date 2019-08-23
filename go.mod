@@ -3,6 +3,7 @@ module bitbucket.org/project-alkemi/data-relay-service
 go 1.12
 
 require (
+	bitbucket.org/project-alkemi/common-message-pkg v0.0.0-20190815182642-4f713c28d55c
 	bitbucket.org/project-alkemi/dr-discovery-service-api v0.0.0-20190821234201-c784e1432c34
 	github.com/certifi/gocertifi v0.0.0-20190506164543-d2eda7129713 // indirect
 	github.com/getsentry/raven-go v0.2.0

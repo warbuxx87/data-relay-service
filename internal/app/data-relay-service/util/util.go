@@ -19,6 +19,10 @@ type Configuration struct {
 	DataRelayDiscoveryRegisterKey  string
 	DataRelayDiscoveryServiceAlias string
 
+	TLSSeverIp           string
+	TLSSeverPort         int
+	TLSSeverCertLocation string
+	TLSSeverKeyLocation  string
 	// 0 = Info, 1 = Debug
 	LogLevel int
 }
