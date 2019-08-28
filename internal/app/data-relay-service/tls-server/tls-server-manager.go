@@ -90,14 +90,17 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 	logrus.Info("Client Connected: " + (*conn).RemoteAddr().String())
 
-	dec := gob.NewDecoder(*conn)
-
 	for {
 
+		dec := gob.NewDecoder(*conn)
+
 		var rawMessage common_message_models.RawMessageModel
+
 		rawMessageUnMarshalError := dec.Decode(&rawMessage)
 
 		if rawMessageUnMarshalError != nil {
+
+			logrus.Error(rawMessageUnMarshalError)
 
 			logrus.Info("Client Disconnected: " + (*conn).RemoteAddr().String())
 			removeDataChannelError := tlsServerManager.DataChannels.RemoveDataChannel((*conn).RemoteAddr().String())
