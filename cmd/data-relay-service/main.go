@@ -30,6 +30,8 @@ func connectToDatabase(config *util.Configuration) (*gorm.DB, error) {
 	database, databaseError := gorm.Open("sqlite3", "datacache.db")
 
 	if databaseError != nil {
+		logrus.Error(databaseError)
+		sentry.CaptureException(databaseError)
 		return nil, databaseError
 	}
 
@@ -56,6 +58,8 @@ func main() {
 	config, configLoadError := util.LoadConfigurationFile()
 
 	if configLoadError == nil {
+		logrus.Error(configLoadError)
+		sentry.CaptureException(databaseError)
 
 		// Set the logrus config level
 		if config.LogLevel == 0 {
@@ -71,6 +75,7 @@ func main() {
 
 		if databaseError != nil {
 			logrus.Error(databaseError, nil)
+			sentry.CaptureException(databaseError)
 			return
 		} else {
 			logrus.Info("Successfully connected to database")
@@ -89,6 +94,7 @@ func main() {
 
 		if sentrySetDSNError != nil {
 			logrus.WithFields(logrus.Fields{}).Error(sentrySetDSNError)
+			sentry.CaptureException(sentrySetDSNError)
 		}
 
 		// Create the redis connection
@@ -104,6 +110,7 @@ func main() {
 			logrus.Info("Failed to connect to redis server")
 
 			logrus.Fatal(redisConnectionError)
+			sentry.CaptureException(redisConnectionError)
 			return
 		} else {
 			logrus.Info("Successfully connected to redis server")
@@ -114,6 +121,7 @@ func main() {
 
 			if redisConnCloseError != nil {
 				logrus.Error(redisConnCloseError)
+				sentry.CaptureException(redisConnCloseError)
 			}
 		}()
 
@@ -125,12 +133,14 @@ func main() {
 
 		if registerResponseError != nil {
 			logrus.Fatal(registerResponseError)
+			sentry.CaptureException(registerResponseError)
 			return
 		}
 
 		if registerResponse.Success == false {
 			logrus.Error("Failed to register to discovery service")
 			logrus.Fatal(registerResponse.ErrorMessage)
+			sentry.CaptureException(registerResponse.ErrorMessage)
 			return
 		} else {
 			logrus.Info("Successfully registered with discovery service")
@@ -142,11 +152,13 @@ func main() {
 			if unRegisterResponseError != nil {
 				logrus.Error("Failed to unregister with discovery service")
 				logrus.Error(unRegisterResponseError)
+				sentry.CaptureException(unRegisterResponseError)
 			}
 
 			if unRegisterResponse.Success == false {
 				logrus.Error("Failed to unregister with discovery service")
 				logrus.Error(unRegisterResponse.ErrorMessage)
+				sentry.CaptureException(unRegisterResponse.ErrorMessage)
 			} else {
 				logrus.Info("UnRegistered with discovery service")
 			}
@@ -170,12 +182,14 @@ func main() {
 				if checkInResponseError != nil {
 					logrus.Error("CheckIn with discovery service failed")
 					logrus.Error(checkInResponseError)
+					sentry.CaptureException(checkInResponseError)
 					return
 				}
 
 				if checkInResponse.Success == false {
 					logrus.Error("CheckIn with discovery service failed")
 					logrus.Error(checkInResponse.ErrorMessage)
+					sentry.CaptureException(checkInResponse.ErrorMessage)
 				}
 
 				time.Sleep(time.Duration(10) * time.Second)
@@ -220,11 +234,12 @@ func main() {
 
 		// Start tls server
 		go func() {
-			startTLSSeverError := dataContext.TLSServerManager.StartSever(dataContext.Config.TLSSeverIp,
+			startTLSServerError := dataContext.TLSServerManager.StartSever(dataContext.Config.TLSSeverIp,
 				dataContext.Config.TLSSeverPort, dataContext.Config.TLSSeverCertLocation, dataContext.Config.TLSSeverKeyLocation)
 
-			if startTLSSeverError != nil {
-				logrus.Fatal(startTLSSeverError)
+			if startTLSServerError != nil {
+				logrus.Fatal(startTLSServerError)
+				sentry.CaptureExpression(startTLSServerError)
 			}
 		}()
 
