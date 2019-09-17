@@ -58,8 +58,6 @@ func main() {
 	config, configLoadError := util.LoadConfigurationFile()
 
 	if configLoadError == nil {
-		logrus.Error(configLoadError)
-		sentry.CaptureException(configLoadError)
 
 		// Set the logrus config level
 		if config.LogLevel == 0 {
