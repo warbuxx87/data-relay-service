@@ -6,7 +6,7 @@ import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
 	"crypto/sha256"
 	"fmt"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -22,14 +22,14 @@ func LoginAction(c echo.Context) error {
 	jsonBindError := cc.Context.Bind(loginForm)
 
 	if jsonBindError != nil {
-		raven.CaptureError(jsonBindError, nil)
+		sentry.CaptureException(jsonBindError)
 		return c.JSON(http.StatusOK, &responses.SuccessFailureResponse{ErrorMessage: util.StrNotCurrentlyLoggedIn, Success: false})
 	}
 
 	userModel, userModelError := util.RetrieveUserModelByUsername(cc.AppContext.Database, loginForm.Username)
 
 	if userModelError != nil {
-		raven.CaptureError(userModelError, nil)
+		sentry.CaptureException(userModelError)
 		return c.JSON(http.StatusOK, &responses.SuccessFailureResponse{ErrorMessage: util.StrUserNotFoundError, Success: false})
 	}
 
@@ -51,7 +51,7 @@ func LoginAction(c echo.Context) error {
 		saveFailed := dateSession.Save(cc.Context.Request(), cc.Context.Response())
 
 		if saveFailed != nil {
-			raven.CaptureError(saveFailed, nil)
+			sentry.CaptureException(saveFailed)
 			return saveFailed
 		}
 
@@ -81,7 +81,7 @@ func LogoutAction(c echo.Context) error {
 	saveFailed := dateSession.Save(cc.Context.Request(), cc.Context.Response())
 
 	if saveFailed != nil {
-		raven.CaptureError(saveFailed, nil)
+		sentry.CaptureException(saveFailed)
 		return saveFailed
 	}
 
