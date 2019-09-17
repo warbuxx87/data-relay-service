@@ -9,7 +9,7 @@ import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/views"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
 	"encoding/gob"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
 	"github.com/jinzhu/gorm"
@@ -83,7 +83,9 @@ func main() {
 		dataContext.Database = databaseConnection
 
 		// Connect to sentry
-		sentrySetDSNError := raven.SetDSN(config.SentryUrl)
+		sentrySetDSNError := sentry.Init(sentry.ClientOptions{
+			Dsn: config.SentryUrl,
+		})
 
 		if sentrySetDSNError != nil {
 			logrus.WithFields(logrus.Fields{}).Error(sentrySetDSNError)
