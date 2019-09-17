@@ -59,7 +59,7 @@ func main() {
 
 	if configLoadError == nil {
 		logrus.Error(configLoadError)
-		sentry.CaptureException(databaseError)
+		sentry.CaptureException(configLoadError)
 
 		// Set the logrus config level
 		if config.LogLevel == 0 {
@@ -140,7 +140,7 @@ func main() {
 		if registerResponse.Success == false {
 			logrus.Error("Failed to register to discovery service")
 			logrus.Fatal(registerResponse.ErrorMessage)
-			sentry.CaptureException(registerResponse.ErrorMessage)
+			sentry.CaptureMessage(registerResponse.ErrorMessage)
 			return
 		} else {
 			logrus.Info("Successfully registered with discovery service")
@@ -158,7 +158,7 @@ func main() {
 			if unRegisterResponse.Success == false {
 				logrus.Error("Failed to unregister with discovery service")
 				logrus.Error(unRegisterResponse.ErrorMessage)
-				sentry.CaptureException(unRegisterResponse.ErrorMessage)
+				sentry.CaptureMessage(unRegisterResponse.ErrorMessage)
 			} else {
 				logrus.Info("UnRegistered with discovery service")
 			}
@@ -189,7 +189,7 @@ func main() {
 				if checkInResponse.Success == false {
 					logrus.Error("CheckIn with discovery service failed")
 					logrus.Error(checkInResponse.ErrorMessage)
-					sentry.CaptureException(checkInResponse.ErrorMessage)
+					sentry.CaptureMessage(checkInResponse.ErrorMessage)
 				}
 
 				time.Sleep(time.Duration(10) * time.Second)
@@ -239,7 +239,7 @@ func main() {
 
 			if startTLSServerError != nil {
 				logrus.Fatal(startTLSServerError)
-				sentry.CaptureExpression(startTLSServerError)
+				sentry.CaptureException(startTLSServerError)
 			}
 		}()
 
