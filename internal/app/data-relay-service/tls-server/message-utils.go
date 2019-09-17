@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"github.com/sirupsen/logrus"
+	"github.com/getsentry/sentry-go"
 	"time"
 )
 
@@ -22,6 +23,7 @@ func CreateRequestSuccessMessage(successUUID string, successMessage string) *com
 
 	if requestSuccessMessageMarshalError != nil {
 		logrus.Error(requestSuccessMessageMarshalError)
+		sentry.CaptureException(requestSuccessMessageMarshalError)
 		return nil
 	}
 
@@ -47,6 +49,7 @@ func CreateRequestFailureMessage(failedUUID string, errorMessage string) *common
 
 	if requestFailureMessageMarshalError != nil {
 		logrus.Error(requestFailureMessageMarshalError)
+		sentry.CaptureException(requestFailureMessageMarshalError)
 		return nil
 	}
 

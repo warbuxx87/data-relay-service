@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -41,6 +41,7 @@ func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServ
 
 	if loadKeyPairError != nil {
 		logrus.Error(loadKeyPairError)
+		sentry.CaptureException(loadKeyPairError)
 		return loadKeyPairError
 	}
 
@@ -54,10 +55,11 @@ func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServ
 	}
 
 	defer func() {
-		tlsSeverCloseError := tlsListenConn.Close()
+		tlsServerCloseError := tlsListenConn.Close()
 
-		if tlsSeverCloseError != nil {
-			logrus.Error(tlsSeverCloseError)
+		if tlsServerCloseError != nil {
+			logrus.Error(tlsServerCloseError)
+			sentry.CaptureException(tlsServerCloseError)
 		}
 	}()
 
@@ -69,6 +71,7 @@ func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServ
 
 		if acceptError != nil {
 			logrus.Error(acceptError)
+			sentry.CaptureException(acceptError)
 			continue
 		}
 
@@ -83,6 +86,7 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 		closeConnectionError := (*conn).Close()
 		if closeConnectionError != nil {
 			logrus.Error(closeConnectionError)
+			sentry.CaptureException(closeConnectionError)
 		}
 	}()
 
@@ -101,12 +105,14 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 		if rawMessageUnMarshalError != nil {
 
 			logrus.Error(rawMessageUnMarshalError)
+			sentry.CaptureException(rawMessageUnMarshalError)
 
 			logrus.Info("Client Disconnected: " + (*conn).RemoteAddr().String())
 			removeDataChannelError := tlsServerManager.DataChannels.RemoveDataChannel((*conn).RemoteAddr().String())
 
 			if removeDataChannelError != nil {
 				logrus.Warn(removeDataChannelError)
+				sentry.CaptureException(removeDataChannelError)
 			}
 
 			delete(*tlsServerManager.ConnectedClients, conn)
@@ -137,7 +143,7 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 				if encodingError != nil {
 					logrus.Error(encodingError)
-					raven.CaptureError(encodingError, nil)
+					sentry.CaptureException(encodingError)
 
 				} else {
 
@@ -155,6 +161,7 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 								if writeDataToSocketError != nil {
 									logrus.Error(writeDataToSocketError)
+									sentry.CaptureException(writeDataToSocketError)
 								}
 							}
 						}
@@ -166,7 +173,7 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 
 					if publishError != nil {
 						logrus.Error(publishError)
-						raven.CaptureError(publishError, nil)
+						sentry.CaptureException(publishError)
 					}
 				}
 			}
@@ -190,6 +197,7 @@ func (tlsServerManager *TLSServerManager) TLSHandlePingMessage(clientConn *net.C
 
 		if pongMessageMarshalError != nil {
 			logrus.Error(pongMessageMarshalError)
+			sentry.CaptureException(pongMessageMarshalError)
 			return
 		}
 
@@ -203,6 +211,7 @@ func (tlsServerManager *TLSServerManager) TLSHandlePingMessage(clientConn *net.C
 
 		if writeDataToSocketError != nil {
 			logrus.Error(writeDataToSocketError)
+			sentry.CaptureException(writeDataToSocketError)
 			return
 		}
 
@@ -220,6 +229,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleSubscribeDataMessage(clientCo
 
 		if subscribeDataChannelMessageDataError != nil {
 			logrus.Error(subscribeDataChannelMessageDataError)
+			sentry.CaptureException(subscribeDataChannelMessageDataError)
 			return
 		}
 
@@ -231,6 +241,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleSubscribeDataMessage(clientCo
 
 			if writeDataToSocketError != nil {
 				logrus.Error(writeDataToSocketError)
+				sentry.CaptureException(writeDataToSocketError)
 				return
 			}
 		}
@@ -239,6 +250,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleSubscribeDataMessage(clientCo
 
 		if writeDataToSocketError != nil {
 			logrus.Error(writeDataToSocketError)
+			sentry.CaptureException(writeDataToSocketError)
 			return
 		}
 
@@ -256,6 +268,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(client
 
 		if unSubscribeDataChannelMessageDataError != nil {
 			logrus.Error(unSubscribeDataChannelMessageDataError)
+			sentry.CaptureException(unSubscribeDataChannelMessageDataError)
 			return
 		}
 
@@ -267,6 +280,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(client
 
 			if writeDataToSocketError != nil {
 				logrus.Error(writeDataToSocketError)
+				sentry.CaptureException(writeDataToSocketError)
 				return
 			}
 		}
@@ -275,6 +289,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(client
 
 		if writeDataToSocketError != nil {
 			logrus.Error(writeDataToSocketError)
+			sentry.CaptureException(writeDataToSocketError)
 			return
 		}
 

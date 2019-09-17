@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/sirupsen/logrus"
 	"time"
 
@@ -58,6 +58,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 				if decodedBytesError != nil {
 					logrus.Error(decodedBytesError)
+					sentry.CaptureException(decodedBytesError)
 				}
 
 				var rawMessage common_message_models.RawMessageModel
@@ -66,6 +67,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 				if orderFilledMessageMarshalError != nil {
 					logrus.Error(orderFilledMessageMarshalError)
+					sentry.CaptureException(orderFilledMessageMarshalError)
 				}
 
 				rawMessage.FromDataRelay = true
@@ -82,6 +84,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 						if writeDataToSocketError != nil {
 							logrus.Error(writeDataToSocketError)
+							sentry.CaptureException(writeDataToSocketError)
 						}
 					}
 
@@ -103,7 +106,7 @@ func (dataExchangeManager *DataExchangeManager) UpdateActiveServices() {
 
 	if allServicesResponseError != nil {
 		logrus.Error(allServicesResponseError)
-		raven.CaptureError(allServicesResponseError, nil)
+		sentry.CaptureException(allServicesResponseError)
 		return
 	}
 
@@ -127,7 +130,7 @@ func (dataExchangeManager *DataExchangeManager) UpdateActiveServices() {
 				pubSubCloseError := value.Close()
 				if pubSubCloseError != nil {
 					logrus.Error(pubSubCloseError)
-					raven.CaptureError(pubSubCloseError, nil)
+					sentry.CaptureException(pubSubCloseError)
 				}
 
 				logrus.Info("UnSubscribing from: ", key)
@@ -160,7 +163,7 @@ func (dataExchangeManager *DataExchangeManager) UpdateActiveServices() {
 
 				if subscriptionConfirmationError != nil {
 					logrus.Error(subscriptionConfirmationError)
-					raven.CaptureError(subscriptionConfirmationError, nil)
+					sentry.CaptureException(subscriptionConfirmationError)
 				}
 
 				logrus.Info("Subscribing to: ", element.UUID, element.Alias)
