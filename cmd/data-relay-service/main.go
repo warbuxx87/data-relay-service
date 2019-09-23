@@ -31,8 +31,6 @@ func connectToDatabase(config *util.Configuration) (*gorm.DB, error) {
 	database, databaseError := gorm.Open("sqlite3", "datacache.db")
 
 	if databaseError != nil {
-		logrus.Error(databaseError)
-		sentry.CaptureException(databaseError)
 		return nil, databaseError
 	}
 
@@ -81,6 +79,15 @@ func main() {
 		logrus.Info("Log Level: Debug")
 	}
 
+	// Connect to sentry
+	sentrySetDSNError := sentry.Init(sentry.ClientOptions{
+		Dsn: config.SentryUrl,
+	})
+
+	if sentrySetDSNError != nil {
+		logrus.WithFields(logrus.Fields{}).Error(sentrySetDSNError)
+	}
+
 	databaseConnection, databaseError := connectToDatabase(config)
 	if databaseError != nil {
 		logrus.Error(databaseError, nil)
@@ -95,15 +102,6 @@ func main() {
 
 	dataContext.Config = config
 	dataContext.Database = databaseConnection
-
-	// Connect to sentry
-	sentrySetDSNError := sentry.Init(sentry.ClientOptions{
-		Dsn: config.SentryUrl,
-	})
-
-	if sentrySetDSNError != nil {
-		logrus.WithFields(logrus.Fields{}).Error(sentrySetDSNError)
-	}
 
 	// Create the redis connection
 	dataContext.RedisClient = redis.NewClient(&redis.Options{
