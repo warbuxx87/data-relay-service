@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"net"
 	"strconv"
@@ -292,6 +293,25 @@ func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(client
 			sentry.CaptureException(writeDataToSocketError)
 			return
 		}
+	}
 
+}
+// CheckRedisConnection pings redis server every 10secs.
+// it'll report error to sentry if there was any
+func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
+	interval := 10 * time.Second
+	ticker := time.NewTicker(interval)
+	for {
+		select {
+		case <-ticker.C:
+			logrus.Info("pinging redis server...")
+			result, redisError := tlsServerManager.RedisClient.Ping().Result()
+			if redisError != nil {
+				logrus.Warn("redis PING command failed: ", redisError)
+				sentry.CaptureException(errors.Wrap(redisError, "redis PING command failed"))
+			}else {
+				logrus.Info("Redis server response: ", result)
+			}
+		}
 	}
 }

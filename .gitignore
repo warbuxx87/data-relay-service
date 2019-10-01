@@ -20,3 +20,4 @@ build/
 *.lock
 config.json
 datacache.db
+configs/dev.json

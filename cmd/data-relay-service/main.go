@@ -177,6 +177,7 @@ func main() {
 	dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.TLSServerManager, dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
 
 	go dataContext.DataExchangeMgr.ProcessServiceUpdates()
+	go dataContext.TLSServerManager.CheckRedisConnection()
 
 	// Start the checkin function. We checkin every 10 seconds
 	go func() {
