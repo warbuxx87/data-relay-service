@@ -296,6 +296,7 @@ func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(client
 	}
 
 }
+
 // CheckRedisConnection pings redis server every 10secs.
 // it'll report error to sentry if there was any
 func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
@@ -309,7 +310,7 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 			if redisError != nil {
 				logrus.Warn("redis PING command failed: ", redisError)
 				sentry.CaptureException(errors.Wrap(redisError, "redis PING command failed"))
-			}else {
+			} else {
 				logrus.Info("Redis server response: ", result)
 			}
 		}
@@ -344,9 +345,9 @@ func sendPingMessage(conn net.Conn) error {
 		return encodePingError
 	}
 	rawMessage := common_message_models.RawMessageModel{
-		TimeStamp:          time.Now().UTC(),
-		MessageType:        common_message_consts.MessageType_PingMessage,
-		RawMessageBytes:    buffer.Bytes(),
+		TimeStamp:       time.Now().UTC(),
+		MessageType:     common_message_consts.MessageType_PingMessage,
+		RawMessageBytes: buffer.Bytes(),
 	}
 	sendPingError := gob.NewEncoder(conn).Encode(rawMessage)
 	if sendPingError != nil {

@@ -77,22 +77,21 @@ func generateDefaultConfig(filename string) error {
 
 func defaultConfig() *Configuration {
 	return &Configuration{
-		ListenIp:			"127.0.0.1",
-		ListenPort:			7070,
-		SentryUrl:			"",
-		RedisIP:			"localhost",
-		RedisPort:			6379,
-		TLSSeverIp:			"127.0.0.1",
-		TLSSeverPort:			7771,
-		TLSSeverCertLocation:		"certs/devcert.crt",
-		TLSSeverKeyLocation:		"certs/devcert.key",
-		DataRelayDiscoveryServiceUrl:	"http://localhost:7060",
-		DataRelayDiscoveryRegisterKey:	"registerme",
-		DataRelayDiscoveryServiceAlias:	"SomeAlias",
-		LogLevel:			1,
+		ListenIp:                       "127.0.0.1",
+		ListenPort:                     7070,
+		SentryUrl:                      "",
+		RedisIP:                        "localhost",
+		RedisPort:                      6379,
+		TLSSeverIp:                     "127.0.0.1",
+		TLSSeverPort:                   7771,
+		TLSSeverCertLocation:           "certs/devcert.crt",
+		TLSSeverKeyLocation:            "certs/devcert.key",
+		DataRelayDiscoveryServiceUrl:   "http://localhost:7060",
+		DataRelayDiscoveryRegisterKey:  "registerme",
+		DataRelayDiscoveryServiceAlias: "SomeAlias",
+		LogLevel:                       1,
 	}
 }
-
 
 func ShowBanner() {
 

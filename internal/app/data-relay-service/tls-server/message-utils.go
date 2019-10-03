@@ -5,8 +5,8 @@ import (
 	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
 	"bytes"
 	"encoding/gob"
-	"github.com/sirupsen/logrus"
 	"github.com/getsentry/sentry-go"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 

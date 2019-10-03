@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/views"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
 	"encoding/gob"
+	"flag"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
@@ -23,7 +24,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-	"flag"
 )
 
 func connectToDatabase(config *util.Configuration) (*gorm.DB, error) {
@@ -54,15 +54,15 @@ func main() {
 
 	util.ShowBanner()
 
-        prod := flag.Bool("prod", false, "Use '$go run ./cmd/... -prod' to set to true, changing default configuration file from 'dev.json' to 'config.json'")
-        flag.Parse()
+	prod := flag.Bool("prod", false, "Use '$go run ./cmd/... -prod' to set to true, changing default configuration file from 'dev.json' to 'config.json'")
+	flag.Parse()
 
-        var configFilename string
-        if *prod {
-                configFilename = "config.json"
-        }else {
-                configFilename = "dev.json"
-        }
+	var configFilename string
+	if *prod {
+		configFilename = "config.json"
+	} else {
+		configFilename = "dev.json"
+	}
 
 	config, configLoadError := util.LoadConfigurationFile(configFilename)
 	if configLoadError != nil {
