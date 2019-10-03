@@ -178,6 +178,7 @@ func main() {
 
 	go dataContext.DataExchangeMgr.ProcessServiceUpdates()
 	go dataContext.TLSServerManager.CheckRedisConnection()
+	go dataContext.TLSServerManager.PingClients()
 
 	// Start the checkin function. We checkin every 10 seconds
 	go func() {
