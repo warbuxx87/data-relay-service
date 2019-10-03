@@ -315,3 +315,42 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 		}
 	}
 }
+
+func (tlsServerManager *TLSServerManager) PingClients() {
+	pingInterval := time.Second * 10
+	ticker := time.NewTicker(pingInterval)
+	// send ping to all connected clients
+	for {
+		select {
+		case <-ticker.C:
+			for client, _ := range *tlsServerManager.ConnectedClients {
+				if client != nil {
+					pingError := sendPingMessage(*client)
+					if pingError != nil {
+						sentry.CaptureException(pingError)
+						logrus.Error(fmt.Sprintf("failed to send ping message to %s: %v", (*client).RemoteAddr().String(), pingError))
+					}
+				}
+			}
+		}
+	}
+}
+
+func sendPingMessage(conn net.Conn) error {
+	pingMessage := &common_message_models.PingMessageModel{TimeStamp: time.Now().UTC()}
+	buffer := &bytes.Buffer{}
+	encodePingError := gob.NewEncoder(buffer).Encode(pingMessage)
+	if encodePingError != nil {
+		return encodePingError
+	}
+	rawMessage := common_message_models.RawMessageModel{
+		TimeStamp:          time.Now().UTC(),
+		MessageType:        common_message_consts.MessageType_PingMessage,
+		RawMessageBytes:    buffer.Bytes(),
+	}
+	sendPingError := gob.NewEncoder(conn).Encode(rawMessage)
+	if sendPingError != nil {
+		return sendPingError
+	}
+	return nil
+}
