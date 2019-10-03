@@ -2,8 +2,8 @@ package views
 
 import (
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 

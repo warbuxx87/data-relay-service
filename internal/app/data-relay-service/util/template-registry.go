@@ -2,8 +2,8 @@ package util
 
 import (
 	"errors"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	"html/template"
 	"io"
 )
@@ -44,4 +44,3 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 
 	return tmpl.ExecuteTemplate(w, "base.html", data)
 }
-
