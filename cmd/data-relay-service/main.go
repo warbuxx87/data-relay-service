@@ -180,6 +180,8 @@ func main() {
 	go dataContext.TLSServerManager.CheckRedisConnection()
 	go dataContext.TLSServerManager.PingClients()
 
+	go api.ContinuousHealthCheck(&dataContext)
+
 	// Start the checkin function. We checkin every 10 seconds
 	go func() {
 
@@ -239,6 +241,7 @@ func main() {
 
 	e.GET("/action/logout", api.LogoutAction)
 	e.POST("/action/login", api.LoginAction)
+	e.GET("/health", api.HealthCheckAction)
 
 	// Start tls server
 	go func() {

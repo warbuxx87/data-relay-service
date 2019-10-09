@@ -27,6 +27,7 @@ type Configuration struct {
 	TLSSeverKeyLocation  string
 	// 0 = Info, 1 = Debug
 	LogLevel int
+	HealthCheckFrequency int
 }
 
 type ActionResult struct {
