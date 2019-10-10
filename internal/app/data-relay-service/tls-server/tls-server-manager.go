@@ -153,28 +153,31 @@ func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
 					// Broadcast to all connected tls clients
 					for key, _ := range *tlsServerManager.ConnectedClients {
 
-						if (*key).RemoteAddr().String() != (*conn).RemoteAddr().String() {
-							if tlsServerManager.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
+						if key != nil {
+							if (*key).RemoteAddr().String() != (*conn).RemoteAddr().String() {
+								if tlsServerManager.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
 
-								clientEnc := gob.NewEncoder(*key)
+									clientEnc := gob.NewEncoder(*key)
 
-								writeDataToSocketError := clientEnc.Encode(rawMessage)
+									writeDataToSocketError := clientEnc.Encode(rawMessage)
 
-								if writeDataToSocketError != nil {
-									logrus.Error(writeDataToSocketError)
-									sentry.CaptureException(writeDataToSocketError)
+									if writeDataToSocketError != nil {
+										logrus.Error(writeDataToSocketError)
+										sentry.CaptureException(writeDataToSocketError)
+									}
 								}
 							}
 						}
-
 					}
 
 					// Send message to other data relays
-					publishError := tlsServerManager.RedisClient.Publish(tlsServerManager.ServiceUUID, base64.StdEncoding.EncodeToString(buffer.Bytes())).Err()
-
-					if publishError != nil {
-						logrus.Error(publishError)
-						sentry.CaptureException(publishError)
+					redisClient := tlsServerManager.RedisClient
+					if redisClient != nil {
+						publishError := redisClient.Publish(tlsServerManager.ServiceUUID, base64.StdEncoding.EncodeToString(buffer.Bytes())).Err()
+						if publishError != nil {
+							logrus.Error(publishError)
+							sentry.CaptureException(publishError)
+						}
 					}
 				}
 			}
@@ -320,6 +323,7 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 func (tlsServerManager *TLSServerManager) PingClients() {
 	pingInterval := time.Second * 10
 	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
 	// send ping to all connected clients
 	for {
 		select {

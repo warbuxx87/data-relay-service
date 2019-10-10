@@ -15,9 +15,7 @@ type DataChannelManager struct {
 }
 
 func CreateDataChannelManager() *DataChannelManager {
-
 	dataChannelManager := DataChannelManager{}
-
 	return &dataChannelManager
 }
 
