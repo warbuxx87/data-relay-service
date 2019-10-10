@@ -16,4 +16,5 @@ type DataContext struct {
 	DiscoveryServiceAPI *dr_discovery_service_api.DrDiscoveryServiceApi
 	DataExchangeMgr     *managers.DataExchangeManager
 	TLSServerManager    *tls_server.TLSServerManager
+	Errors *ErrorsStruct
 }
