@@ -1,0 +1,10 @@
+{
+
+  "TLSSeverIp": "127.0.0.1",
+  "TLSSeverPort": 7771,
+  "TLSSeverCertLocation": "certs/devcert.crt",
+  "TLSSeverKeyLocation": "certs/devcert.key",
+  "LogLevel": 1,
+  "AccessUUID" : "",
+  "AccessToken" : ""
+}
