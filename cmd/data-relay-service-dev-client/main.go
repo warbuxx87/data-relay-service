@@ -82,7 +82,7 @@ func (c *DevClient) sendOrderFilled() error {
 		OrderId:        uuid.NewV4().String(),
 		Price:          float64(randomInt(0, 200)),
 		BaseAsset:      "BTC",
-		SecondaryAsset: "TRX",
+		SecondaryAsset: "USDT",
 		Amount:         float64(randomInt(1, 100)),
 		IsBuy:          true,
 	}
@@ -95,7 +95,7 @@ func (c *DevClient) sendPriceUpdate() error {
 		UUID:        uuid.NewV4().String(),
 		Price:          float64(randomInt(0, 200)),
 		BaseAsset:      "BTC",
-		SecondaryAsset: "TRX",
+		SecondaryAsset: "USDT",
 	}
 	return c.sendMessage(priceUpdateMessage, common_message_consts.MessageType_PriceUpdateMessage)
 }
@@ -115,6 +115,7 @@ func (c *DevClient) sendUnsubscribeMessage() error {
 }
 
 func (c *DevClient) sendMessage(message interface{}, typeConst common_message_consts.MessageTypeConst) error {
+	log.Println("Sending message ", typeConst)
 	buffer := bytes.Buffer{}
 	encodeError := gob.NewEncoder(&buffer).Encode(message)
 	if encodeError != nil {
@@ -223,12 +224,13 @@ func (c *DevClient) processInput() {
 			log.Println("Thank you!")
 			break
 		}
-		switch input {
+		switch strings.TrimSpace(input) {
 		case "1":
 			pingError := c.sendPingMessage()
 			if pingError != nil {
 				log.Println(pingError)
 			}
+			break
 		case "2":
 			priceUpdateError := c.sendPriceUpdate()
 			if priceUpdateError != nil {
@@ -249,16 +251,18 @@ func (c *DevClient) processInput() {
 			if unSubscribeError != nil {
 				log.Println(unSubscribeError)
 			}
+		default:
+			break
 		}
-	}
-	rawMessage, err := c.readResponse()
-	if err != nil {
-		log.Println(err)
-	}else {
-		if rawMessage.FromDataRelay == true {
-			logrus.Info("Message From Relay : "+rawMessage.FromDataRelayAlias+" "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
-		} else {
-			logrus.Info("Message: "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
+		rawMessage, err := c.readResponse()
+		if err != nil {
+			log.Println(err)
+		}else {
+			if rawMessage.FromDataRelay == true {
+				logrus.Info("Message From Relay : "+rawMessage.FromDataRelayAlias+" "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
+			} else {
+				logrus.Info("Message: "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
+			}
 		}
 	}
 }
