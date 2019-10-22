@@ -1,6 +1,6 @@
 package util
 
 type ErrorsStruct struct {
-	DBErrors int
+	DBErrors   int
 	AuthErrors int
 }

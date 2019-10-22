@@ -26,8 +26,19 @@ type Configuration struct {
 	TLSSeverCertLocation string
 	TLSSeverKeyLocation  string
 	// 0 = Info, 1 = Debug
-	LogLevel int
+	LogLevel             int
 	HealthCheckFrequency int
+}
+
+type ClientConfiguration struct {
+	TLSSeverIp           string
+	TLSSeverPort         int
+	TLSSeverCertLocation string
+	TLSSeverKeyLocation  string
+	// 0 = Info, 1 = Debug
+	LogLevel int
+	AccessUUID string
+	AccessToken string
 }
 
 type ActionResult struct {
@@ -53,6 +64,37 @@ func LoadConfigurationFile(filename string) (*Configuration, error) {
 		return nil, err
 	}
 	return &configuration, nil
+}
+
+func LoadClientConfiguration(filename string) (*ClientConfiguration, error) {
+	configPath, err := resolveConfigPath(filename)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(configPath); err != nil {
+		if err := generateClientConfig(configPath); err != nil {
+			return nil, err
+		}
+	}
+	log.Info("Loading client configuration from %s:", configPath)
+	config := &ClientConfiguration{}
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func generateClientConfig(configPath string) error {
+	cfg := defaultClientConfig()
+	data, err := json.MarshalIndent(cfg, "", "\t")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(configPath, data, 0664)
 }
 
 func resolveConfigPath(filename string) (string, error) {
@@ -91,6 +133,18 @@ func defaultConfig() *Configuration {
 		DataRelayDiscoveryRegisterKey:  "registerme",
 		DataRelayDiscoveryServiceAlias: "SomeAlias",
 		LogLevel:                       1,
+	}
+}
+
+func defaultClientConfig() *ClientConfiguration {
+	return &ClientConfiguration{
+		TLSSeverIp:           "127.0.0.1",
+		TLSSeverPort:         7771,
+		TLSSeverCertLocation: "certs/devcert.crt",
+		TLSSeverKeyLocation:  "certs/devcert.key",
+		LogLevel:             1,
+		AccessToken: "",
+		AccessUUID: "",
 	}
 }
 
