@@ -39,10 +39,11 @@ type DevClient struct {
 	config *util.ClientConfiguration
 	conn   *grpc.ClientConn
 	client *services.DataRelayServiceClient
+	clientError chan error
 }
 
 func NewDevClient(config *util.ClientConfiguration) *DevClient {
-	return &DevClient{config: config}
+	return &DevClient{config: config, clientError: make(chan error, 1)}
 }
 
 func (c *DevClient) connect() error {
@@ -151,7 +152,6 @@ func (c *DevClient) sendPriceUpdate() error {
 	}
 
 	sendPriceUpdateResponse, sendPriceUpdateError := (*c.client).SendData(context.Background(), &toSendMessage)
-
 	if sendPriceUpdateResponse != nil {
 		if sendPriceUpdateResponse.Success == false {
 			logrus.Error(sendPriceUpdateResponse.ErrorStr)
@@ -159,8 +159,25 @@ func (c *DevClient) sendPriceUpdate() error {
 			logrus.Info("Send price update success")
 		}
 	}
-
 	return sendPriceUpdateError
+}
+
+func (c *DevClient) ReceiveAllData() error {
+	stream, err := (*c.client).ReceiveAllData(context.Background(), &messages.Empty{})
+	if err != nil {
+		return err
+	}
+	go func(stream services.DataRelayService_ReceiveAllDataClient) {
+		for {
+			message, err := stream.Recv()
+			if err != nil {
+				c.clientError <- err
+				break
+			}
+			log.Printf("Stream message: Type=%s", message.MessageType.String())
+		}
+	}(stream)
+	return nil
 }
 
 func main() {
@@ -185,7 +202,6 @@ func main() {
 	} else {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Info("Log Level: Debug")
-
 	}
 
 	log.SetFlags(log.Lshortfile)
@@ -207,6 +223,7 @@ func (c *DevClient) outputOptions() {
 	log.Println("> Select one of the options below to test data-relay-service.")
 	log.Println("1. PriceUpdateMessage")
 	log.Println("2. OrderFilledMessage")
+	log.Println("3. ReceiveAllData")
 	log.Println("Press q to quit")
 	log.Println(">")
 }
@@ -225,7 +242,6 @@ func (c *DevClient) processInput() {
 			break
 		}
 		switch strings.TrimSpace(input) {
-
 		case "1":
 			priceUpdateError := c.sendPriceUpdate()
 			if priceUpdateError != nil {
@@ -236,9 +252,19 @@ func (c *DevClient) processInput() {
 			if orderFilledError != nil {
 				logrus.Error(orderFilledError)
 			}
+		case "3":
+			streamError := c.ReceiveAllData()
+			if streamError != nil {
+				log.Printf("Stream error: %v", streamError)
+				return
+			}
+			logrus.Info("Waiting for error...")
+			err := <- c.clientError
+			logrus.Errorf("Stream Error: %v", err)
+			close(c.clientError)
+			os.Exit(1)
 		default:
 			break
 		}
-
 	}
 }
