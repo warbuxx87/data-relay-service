@@ -1,14 +1,11 @@
 package managers
 
 import (
-	common_message_consts "bitbucket.org/project-alkemi/common-message-pkg/common-message-consts"
-	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
+	"bitbucket.org/project-alkemi/common-pkg/gen/messages"
 	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/tls-server"
 	dr_discovery_service_api "bitbucket.org/project-alkemi/dr-discovery-service-api"
-	"bytes"
-	"encoding/base64"
-	"encoding/gob"
 	"github.com/getsentry/sentry-go"
+	"github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
 	"time"
 
@@ -54,41 +51,33 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 				logrus.Info("Got payload from : " + key)
 
-				decodedBytes, decodedBytesError := base64.StdEncoding.DecodeString(msg.Payload)
+				var alkemiMessage messages.AlkemiMessage
 
-				if decodedBytesError != nil {
-					logrus.Error(decodedBytesError)
-					sentry.CaptureException(decodedBytesError)
-				}
+				alkemiUnmarshalError := proto.UnmarshalText(msg.Payload, &alkemiMessage)
 
-				var rawMessage common_message_models.RawMessageModel
+				if alkemiUnmarshalError != nil {
+					for _, conn := range dataExchangeManager.TLSServerMgr.AllDataClients {
 
-				orderFilledMessageMarshalError := gob.NewDecoder(bytes.NewBuffer(decodedBytes)).Decode(&rawMessage)
+						go func(alkemiMessage *messages.AlkemiMessage, conn *tls_server.AllDataConnection) {
 
-				if orderFilledMessageMarshalError != nil {
-					logrus.Error(orderFilledMessageMarshalError)
-					sentry.CaptureException(orderFilledMessageMarshalError)
-				}
+							if conn.Active {
 
-				rawMessage.FromDataRelay = true
-				rawMessage.FromDataRelayAlias = dataExchangeManager.DiscoveryServiceApi.Alias
+								streamSendError := conn.Stream.Send(alkemiMessage)
 
-				// Broadcast to all clients
-				for key, _ := range *dataExchangeManager.TLSServerMgr.ConnectedClients {
+								logrus.Info("Sending message to: ", conn.Stream)
 
-					if dataExchangeManager.TLSServerMgr.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
+								if streamSendError != nil {
+									logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
+									conn.Active = false
+									conn.Error <- streamSendError
+								}
 
-						clientEnc := gob.NewEncoder(*key)
+							}
+						}(&alkemiMessage, conn)
 
-						writeDataToSocketError := clientEnc.Encode(rawMessage)
-
-						if writeDataToSocketError != nil {
-							logrus.Error(writeDataToSocketError)
-							sentry.CaptureException(writeDataToSocketError)
-						}
 					}
-
 				}
+
 			default:
 				break
 			}

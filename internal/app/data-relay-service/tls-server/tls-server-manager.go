@@ -1,44 +1,53 @@
 package tls_server
 
 import (
-	common_message_consts "bitbucket.org/project-alkemi/common-message-pkg/common-message-consts"
-	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
-	"bytes"
-	"crypto/tls"
-	"encoding/base64"
-	"encoding/gob"
+	"bitbucket.org/project-alkemi/common-pkg/gen/messages"
+	"bitbucket.org/project-alkemi/common-pkg/gen/services"
 	"fmt"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 )
 
-type TLSServerManager struct {
-	ConnectedClients *map[*net.Conn]bool
-	RedisClient      *redis.Client
-	DataChannels     *DataChannelManager
-	ServiceUUID      string
+type AllDataConnection struct {
+	Stream services.DataRelayService_ReceiveAllDataServer
+	UUID   string
+	Active bool
+	Error  chan error
 }
 
-func CreateTLSServerManager(serviceUUID string, redisClient *redis.Client) *TLSServerManager {
+type TLSServerManager struct {
+	AllDataClients []*AllDataConnection
+	RedisClient    *redis.Client
+	ServiceUUID    string
+	ServiceAlias   string
+}
+
+func CreateTLSServerManager(serviceUUID string, serviceAlias string, redisClient *redis.Client) *TLSServerManager {
 
 	tlsServerManager := TLSServerManager{}
 
-	myMap := make(map[*net.Conn]bool)
-	tlsServerManager.ConnectedClients = &myMap
+	var allDataClients []*AllDataConnection
+	tlsServerManager.AllDataClients = allDataClients
 	tlsServerManager.RedisClient = redisClient
 	tlsServerManager.ServiceUUID = serviceUUID
-	tlsServerManager.DataChannels = CreateDataChannelManager()
+	tlsServerManager.ServiceAlias = serviceAlias
 	return &tlsServerManager
 }
 
 func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServerPort int, tlsCertLocation string, tlsKeyLocation string) error {
 
-	connectionCertificate, loadKeyPairError := tls.LoadX509KeyPair(tlsCertLocation, tlsKeyLocation)
+	tlsCertConfig, loadKeyPairError := credentials.NewServerTLSFromFile(tlsCertLocation, tlsKeyLocation)
 
 	if loadKeyPairError != nil {
 		logrus.Error(loadKeyPairError)
@@ -46,257 +55,94 @@ func (tlsServerManager *TLSServerManager) StartSever(tlsServerIP string, tlsServ
 		return loadKeyPairError
 	}
 
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{connectionCertificate}}
+	gRPCServer := grpc.NewServer(grpc.Creds(tlsCertConfig))
 
-	tlsListenConn, tlsListenError := tls.Listen("tcp", tlsServerIP+":"+strconv.Itoa(tlsServerPort), tlsConfig)
+	tlsServerListener, tlsServerListenerError := net.Listen("tcp", tlsServerIP+":"+strconv.Itoa(tlsServerPort))
 
-	if tlsListenError != nil {
-		logrus.Info(tlsListenError)
-		return tlsListenError
+	if tlsServerListenerError != nil {
+		logrus.Info(tlsServerListenerError)
+		return tlsServerListenerError
 	}
 
-	defer func() {
-		tlsServerCloseError := tlsListenConn.Close()
-
-		if tlsServerCloseError != nil {
-			logrus.Error(tlsServerCloseError)
-			sentry.CaptureException(tlsServerCloseError)
-		}
-	}()
+	services.RegisterDataRelayServiceServer(gRPCServer, tlsServerManager)
 
 	fmt.Println("⇨ tls sever started on " + tlsServerIP + ":" + strconv.Itoa(tlsServerPort))
 
-	for {
+	serveError := gRPCServer.Serve(tlsServerListener)
 
-		clientConnection, acceptError := tlsListenConn.Accept()
-
-		if acceptError != nil {
-			logrus.Error(acceptError)
-			sentry.CaptureException(acceptError)
-			continue
-		}
-
-		go HandleTLSConnection(tlsServerManager, &clientConnection)
+	if serveError != nil {
+		logrus.Info(serveError)
+		return serveError
 	}
 
+	return nil
 }
 
-func HandleTLSConnection(tlsServerManager *TLSServerManager, conn *net.Conn) {
+func (tlsServerManager *TLSServerManager) ReceiveAllData(req *messages.Empty, stream services.DataRelayService_ReceiveAllDataServer) error {
 
-	defer func() {
-		closeConnectionError := (*conn).Close()
-		if closeConnectionError != nil {
-			logrus.Error(closeConnectionError)
-			sentry.CaptureException(closeConnectionError)
-		}
-	}()
+	allDataConnection := &AllDataConnection{
+		Stream: stream,
+		UUID:   uuid.NewV4().String(),
+		Active: true,
+		Error:  make(chan error),
+	}
 
-	(*tlsServerManager.ConnectedClients)[conn] = true
+	tlsServerManager.AllDataClients = append(tlsServerManager.AllDataClients, allDataConnection)
 
-	logrus.Info("Client Connected: " + (*conn).RemoteAddr().String())
+	logrus.Info("Received new connection request from: ", stream)
 
-	for {
+	return <-allDataConnection.Error
+}
 
-		dec := gob.NewDecoder(*conn)
+func (tlsServerManager *TLSServerManager) SendData(ctx context.Context, alkemiMessage *messages.AlkemiMessage) (*messages.RequestResponse, error) {
 
-		var rawMessage common_message_models.RawMessageModel
+	wait := sync.WaitGroup{}
+	done := make(chan int)
 
-		rawMessageUnMarshalError := dec.Decode(&rawMessage)
+	logrus.Info("Received message from: ", alkemiMessage.AccessUUID)
 
-		if rawMessageUnMarshalError != nil {
+	for _, conn := range tlsServerManager.AllDataClients {
+		wait.Add(1)
 
-			logrus.Error(rawMessageUnMarshalError)
-			sentry.CaptureException(rawMessageUnMarshalError)
+		go func(alkemiMessage *messages.AlkemiMessage, conn *AllDataConnection) {
+			defer wait.Done()
 
-			logrus.Info("Client Disconnected: " + (*conn).RemoteAddr().String())
-			removeDataChannelError := tlsServerManager.DataChannels.RemoveDataChannel((*conn).RemoteAddr().String())
+			if conn.Active {
 
-			if removeDataChannelError != nil {
-				logrus.Warn(removeDataChannelError)
-				sentry.CaptureException(removeDataChannelError)
-			}
+				alkemiMessage.FromDataRelay = true
+				alkemiMessage.FromDataRelayAlias = tlsServerManager.ServiceAlias
 
-			delete(*tlsServerManager.ConnectedClients, conn)
+				streamSendError := conn.Stream.Send(alkemiMessage)
 
-			return
+				logrus.Info("Sending message to: ", conn.Stream)
 
-		} else {
+				if streamSendError != nil {
+					logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
+					conn.Active = false
+					conn.Error <- streamSendError
+				}
 
-			if rawMessage.MessageType == common_message_consts.MessageType_PingMessage {
-
-				logrus.Debug("Ping Message Received From: " + (*conn).RemoteAddr().String())
-				tlsServerManager.TLSHandlePingMessage(conn, rawMessage)
-
-			} else if rawMessage.MessageType == common_message_consts.MessageType_SubscribeDataChannelMessage {
-				logrus.Debug("Subscribe data channel message received from: " + (*conn).RemoteAddr().String())
-				tlsServerManager.TLSHandleSubscribeDataMessage(conn, tlsServerManager.DataChannels, rawMessage)
-
-			} else if rawMessage.MessageType == common_message_consts.MessageType_UnSubscribeDataChannelMessage {
-				logrus.Debug("UnSubscribe data channel message received from: " + (*conn).RemoteAddr().String())
-				tlsServerManager.TLSHandleUnSubscribeDataMessage(conn, tlsServerManager.DataChannels, rawMessage)
-
-			} else {
-
-				// If not ping pong forward to all clients
-				buffer := bytes.Buffer{}
-
-				encodingError := gob.NewEncoder(&buffer).Encode(rawMessage)
-
-				if encodingError != nil {
-					logrus.Error(encodingError)
-					sentry.CaptureException(encodingError)
-
-				} else {
-
-					rawMessage.FromDataRelay = true
-
-					// Broadcast to all connected tls clients
-					for key, _ := range *tlsServerManager.ConnectedClients {
-
-						if key != nil {
-							if (*key).RemoteAddr().String() != (*conn).RemoteAddr().String() {
-								if tlsServerManager.DataChannels.CheckIfChannelSubscribed((*key).RemoteAddr().String(), common_message_consts.DataChannelType_AllData) {
-
-									clientEnc := gob.NewEncoder(*key)
-
-									writeDataToSocketError := clientEnc.Encode(rawMessage)
-
-									if writeDataToSocketError != nil {
-										logrus.Error(writeDataToSocketError)
-										sentry.CaptureException(writeDataToSocketError)
-									}
-								}
-							}
-						}
-					}
-
-					// Send message to other data relays
-					redisClient := tlsServerManager.RedisClient
-					if redisClient != nil {
-						publishError := redisClient.Publish(tlsServerManager.ServiceUUID, base64.StdEncoding.EncodeToString(buffer.Bytes())).Err()
-						if publishError != nil {
-							logrus.Error(publishError)
-							sentry.CaptureException(publishError)
-						}
+				redisClient := tlsServerManager.RedisClient
+				if redisClient != nil {
+					publishError := redisClient.Publish(tlsServerManager.ServiceUUID, proto.MarshalTextString(alkemiMessage)).Err()
+					if publishError != nil {
+						logrus.Error(publishError)
+						sentry.CaptureException(publishError)
 					}
 				}
+
 			}
-		}
+		}(alkemiMessage, conn)
 
 	}
 
-}
+	go func() {
+		wait.Wait()
+		close(done)
+	}()
 
-func (tlsServerManager *TLSServerManager) TLSHandlePingMessage(clientConn *net.Conn, message common_message_models.RawMessageModel) {
-
-	if clientConn != nil {
-
-		clientEnc := gob.NewEncoder(*clientConn)
-
-		pongBuffer := bytes.Buffer{}
-
-		pongMessage := common_message_models.PongMessageModel{TimeStamp: time.Now().UTC()}
-
-		pongMessageMarshalError := gob.NewEncoder(&pongBuffer).Encode(pongMessage)
-
-		if pongMessageMarshalError != nil {
-			logrus.Error(pongMessageMarshalError)
-			sentry.CaptureException(pongMessageMarshalError)
-			return
-		}
-
-		rawMessageModel := common_message_models.RawMessageModel{
-			MessageType:     common_message_consts.MessageType_PongMessage,
-			RawMessageBytes: pongBuffer.Bytes(),
-			TimeStamp:       time.Now().UTC(),
-		}
-
-		writeDataToSocketError := clientEnc.Encode(rawMessageModel)
-
-		if writeDataToSocketError != nil {
-			logrus.Error(writeDataToSocketError)
-			sentry.CaptureException(writeDataToSocketError)
-			return
-		}
-
-	}
-}
-
-func (tlsServerManager *TLSServerManager) TLSHandleSubscribeDataMessage(clientConn *net.Conn, dataChannelManager *DataChannelManager, message common_message_models.RawMessageModel) {
-
-	if clientConn != nil {
-
-		clientEnc := gob.NewEncoder(*clientConn)
-
-		var subscribeDataChannelMessageModel common_message_models.SubscribeDataChannelMessageModel
-		subscribeDataChannelMessageDataError := gob.NewDecoder(bytes.NewBuffer(message.RawMessageBytes)).Decode(&subscribeDataChannelMessageModel)
-
-		if subscribeDataChannelMessageDataError != nil {
-			logrus.Error(subscribeDataChannelMessageDataError)
-			sentry.CaptureException(subscribeDataChannelMessageDataError)
-			return
-		}
-
-		addChannelSubscriptionError := dataChannelManager.AddChannelSubscription((*clientConn).RemoteAddr().String(), subscribeDataChannelMessageModel.DataChannelType)
-
-		if addChannelSubscriptionError != nil {
-
-			writeDataToSocketError := clientEnc.Encode(CreateRequestFailureMessage(message.UUID, addChannelSubscriptionError.Error()))
-
-			if writeDataToSocketError != nil {
-				logrus.Error(writeDataToSocketError)
-				sentry.CaptureException(writeDataToSocketError)
-				return
-			}
-		}
-
-		writeDataToSocketError := clientEnc.Encode(CreateRequestSuccessMessage(message.UUID, ""))
-
-		if writeDataToSocketError != nil {
-			logrus.Error(writeDataToSocketError)
-			sentry.CaptureException(writeDataToSocketError)
-			return
-		}
-
-	}
-}
-
-func (tlsServerManager *TLSServerManager) TLSHandleUnSubscribeDataMessage(clientConn *net.Conn, dataChannelManager *DataChannelManager, message common_message_models.RawMessageModel) {
-
-	if clientConn != nil {
-
-		clientEnc := gob.NewEncoder(*clientConn)
-
-		var unSubscribeDataChannelMessageModel common_message_models.UnSubscribeDataChannelMessageModel
-		unSubscribeDataChannelMessageDataError := gob.NewDecoder(bytes.NewBuffer(message.RawMessageBytes)).Decode(&unSubscribeDataChannelMessageModel)
-
-		if unSubscribeDataChannelMessageDataError != nil {
-			logrus.Error(unSubscribeDataChannelMessageDataError)
-			sentry.CaptureException(unSubscribeDataChannelMessageDataError)
-			return
-		}
-
-		removeChannelSubscriptionError := dataChannelManager.RemoveChannelSubscription((*clientConn).RemoteAddr().String(), unSubscribeDataChannelMessageModel.DataChannelType)
-
-		if removeChannelSubscriptionError != nil {
-
-			writeDataToSocketError := clientEnc.Encode(CreateRequestFailureMessage(message.UUID, removeChannelSubscriptionError.Error()))
-
-			if writeDataToSocketError != nil {
-				logrus.Error(writeDataToSocketError)
-				sentry.CaptureException(writeDataToSocketError)
-				return
-			}
-		}
-
-		writeDataToSocketError := clientEnc.Encode(CreateRequestSuccessMessage(message.UUID, ""))
-
-		if writeDataToSocketError != nil {
-			logrus.Error(writeDataToSocketError)
-			sentry.CaptureException(writeDataToSocketError)
-			return
-		}
-	}
+	<-done
+	return &messages.RequestResponse{Success: true, ErrorStr: ""}, nil
 
 }
 
@@ -318,44 +164,4 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 			}
 		}
 	}
-}
-
-func (tlsServerManager *TLSServerManager) PingClients() {
-	pingInterval := time.Second * 10
-	ticker := time.NewTicker(pingInterval)
-	defer ticker.Stop()
-	// send ping to all connected clients
-	for {
-		select {
-		case <-ticker.C:
-			for client, _ := range *tlsServerManager.ConnectedClients {
-				if client != nil {
-					pingError := sendPingMessage(*client)
-					if pingError != nil {
-						sentry.CaptureException(pingError)
-						logrus.Error(fmt.Sprintf("failed to send ping message to %s: %v", (*client).RemoteAddr().String(), pingError))
-					}
-				}
-			}
-		}
-	}
-}
-
-func sendPingMessage(conn net.Conn) error {
-	pingMessage := &common_message_models.PingMessageModel{TimeStamp: time.Now().UTC()}
-	buffer := &bytes.Buffer{}
-	encodePingError := gob.NewEncoder(buffer).Encode(pingMessage)
-	if encodePingError != nil {
-		return encodePingError
-	}
-	rawMessage := common_message_models.RawMessageModel{
-		TimeStamp:       time.Now().UTC(),
-		MessageType:     common_message_consts.MessageType_PingMessage,
-		RawMessageBytes: buffer.Bytes(),
-	}
-	sendPingError := gob.NewEncoder(conn).Encode(rawMessage)
-	if sendPingError != nil {
-		return sendPingError
-	}
-	return nil
 }
