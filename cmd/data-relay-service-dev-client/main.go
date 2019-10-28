@@ -1,14 +1,16 @@
 package main
 
 import (
-	common_message_consts "bitbucket.org/project-alkemi/common-message-pkg/common-message-consts"
-	common_message_models "bitbucket.org/project-alkemi/common-message-pkg/common-message-models"
+	"bitbucket.org/project-alkemi/common-pkg/gen/consts"
+	"bitbucket.org/project-alkemi/common-pkg/gen/messages"
+	"bitbucket.org/project-alkemi/common-pkg/gen/services"
 	"bufio"
-	"bytes"
-	"encoding/gob"
+	"context"
 	"errors"
 	"flag"
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"math/rand"
 	"strings"
 	"time"
@@ -35,120 +37,130 @@ func randomInt(min, max int) int {
 
 type DevClient struct {
 	config *util.ClientConfiguration
-	conn *tls.Conn
+	conn   *grpc.ClientConn
+	client *services.DataRelayServiceClient
 }
 
 func NewDevClient(config *util.ClientConfiguration) *DevClient {
-	return &DevClient{config:config}
+	return &DevClient{config: config}
 }
 
 func (c *DevClient) connect() error {
+
 	cert, err := ioutil.ReadFile(c.config.TLSSeverCertLocation)
+
 	if err != nil {
 		return err
 	}
+
 	certPool := x509.NewCertPool()
 	certPool.AppendCertsFromPEM(cert)
 
 	conf := &tls.Config{
 		RootCAs: certPool,
 	}
-	conn, err := tls.Dial("tcp", c.config.TLSSeverIp+":"+strconv.Itoa(c.config.TLSSeverPort), conf)
+
+	conn, err := grpc.Dial(c.config.TLSSeverIp+":"+strconv.Itoa(c.config.TLSSeverPort), grpc.WithTransportCredentials(credentials.NewTLS(conf)))
+
 	if err != nil {
 		return err
 	}
+
+	derp := services.NewDataRelayServiceClient(conn)
+
 	c.conn = conn
+	c.client = &derp
+
 	return nil
 }
 
 func (c *DevClient) close() error {
-	if c.conn == nil {
+	if c.client == nil {
 		return errors.New("connection is closed")
 	}
 	return c.conn.Close()
 }
 
-func (c *DevClient) sendSubscriptionMessage() error {
-	subscriptionMessage := common_message_models.SubscribeDataChannelMessageModel{
-		DataChannelType: common_message_consts.DataChannelType_AllData,
-	}
-	return c.sendMessage(subscriptionMessage, common_message_consts.MessageType_UnSubscribeDataChannelMessage)
-}
-
 func (c *DevClient) sendOrderFilled() error {
-	// Send price update
-	orderFilledMessage := common_message_models.OrderFilledMessageModel{
-		TimeStamp:      time.Now().UTC(),
+
+	// Send order filled
+	currentTime := time.Now().UTC()
+
+	currentTimeMessage := messages.Timestamp{
+		Seconds: currentTime.Unix(),
+		Nanos:   int32(currentTime.Nanosecond()),
+	}
+
+	newOrderFilledMessage := messages.OrderFilled{
+		UpdateTime:     &currentTimeMessage,
 		OrderId:        uuid.NewV4().String(),
-		Price:          float64(randomInt(0, 200)),
+		Price:          float32(randomInt(0, 200)),
 		BaseAsset:      "BTC",
 		SecondaryAsset: "USDT",
-		Amount:         float64(randomInt(1, 100)),
+		Amount:         float32(randomInt(1, 100)),
 		IsBuy:          true,
 	}
-	return c.sendMessage(orderFilledMessage, common_message_consts.MessageType_OrderFilledMessage)
+
+	toSendMessage := messages.AlkemiMessage{
+		UUID:         uuid.NewV4().String(),
+		AccessUUID:   c.config.AccessUUID,
+		AccessToken:  c.config.AccessToken,
+		SentTime:     &currentTimeMessage,
+		MessageType:  consts.MessageType_ORDER_FILLED,
+		OrderFilledM: &newOrderFilledMessage,
+	}
+
+	sendOrderFilledResponse, sendOrderFilledResponseError := (*c.client).SendData(context.Background(), &toSendMessage)
+
+	if sendOrderFilledResponse != nil {
+		if sendOrderFilledResponse.Success == false {
+			logrus.Error(sendOrderFilledResponse.ErrorStr)
+		}
+
+		logrus.Info("Send order filled success")
+	}
+
+	return sendOrderFilledResponseError
 }
 
 func (c *DevClient) sendPriceUpdate() error {
-	priceUpdateMessage := common_message_models.PriceUpdateMessageModel{
-		TimeStamp:      time.Now().UTC(),
-		UUID:        uuid.NewV4().String(),
-		Price:          float64(randomInt(0, 200)),
+
+	// Send order filled
+	currentTime := time.Now().UTC()
+
+	currentTimeMessage := messages.Timestamp{
+		Seconds: currentTime.Unix(),
+		Nanos:   int32(currentTime.Nanosecond()),
+	}
+
+	newPriceUpdateMessage := messages.PriceUpdate{
+		UUID:           uuid.NewV4().String(),
+		UpdateTime:     &currentTimeMessage,
 		BaseAsset:      "BTC",
 		SecondaryAsset: "USDT",
+		Price:          float32(randomInt(0, 200)),
 	}
-	return c.sendMessage(priceUpdateMessage, common_message_consts.MessageType_PriceUpdateMessage)
-}
 
-func (c *DevClient) sendPingMessage() error {
-	pingMessage := common_message_models.PingMessageModel{
-		TimeStamp:      time.Now().UTC(),
+	toSendMessage := messages.AlkemiMessage{
+		UUID:         uuid.NewV4().String(),
+		AccessUUID:   c.config.AccessUUID,
+		AccessToken:  c.config.AccessToken,
+		SentTime:     &currentTimeMessage,
+		MessageType:  consts.MessageType_PRICE_UPDATE,
+		PriceUpdateM: &newPriceUpdateMessage,
 	}
-	return c.sendMessage(pingMessage, common_message_consts.MessageType_PingMessage)
-}
 
-func (c *DevClient) sendUnsubscribeMessage() error {
-	subscriptionMessage := common_message_models.SubscribeDataChannelMessageModel{
-		DataChannelType: common_message_consts.DataChannelType_AllData,
-	}
-	return c.sendMessage(subscriptionMessage, common_message_consts.MessageType_SubscribeDataChannelMessage)
-}
+	sendPriceUpdateResponse, sendPriceUpdateError := (*c.client).SendData(context.Background(), &toSendMessage)
 
-func (c *DevClient) sendMessage(message interface{}, typeConst common_message_consts.MessageTypeConst) error {
-	log.Println("Sending message ", typeConst)
-	buffer := bytes.Buffer{}
-	encodeError := gob.NewEncoder(&buffer).Encode(message)
-	if encodeError != nil {
-		return encodeError
+	if sendPriceUpdateResponse != nil {
+		if sendPriceUpdateResponse.Success == false {
+			logrus.Error(sendPriceUpdateResponse.ErrorStr)
+		} else {
+			logrus.Info("Send price update success")
+		}
 	}
-	rawMessage := common_message_models.RawMessageModel{
-		TimeStamp:       time.Now().UTC(),
-		UUID:            uuid.NewV4().String(),
-		AccessUUID: 	c.config.AccessUUID,
-		AccessToken: 	c.config.AccessToken,
-		MessageType:     typeConst,
-		RawMessageBytes: buffer.Bytes(),
-	}
-	networkEncodeError := gob.NewEncoder(c.conn).Encode(rawMessage)
-	if networkEncodeError != nil {
-		return networkEncodeError
-	}
-	return nil
-}
 
-func (c *DevClient) readResponse() (*common_message_models.RawMessageModel, error) {
-	dec := gob.NewDecoder(c.conn)
-	var rawMessage common_message_models.RawMessageModel
-	rawMessageUnMarshalError := dec.Decode(&rawMessage)
-	if rawMessageUnMarshalError != nil {
-		return nil, rawMessageUnMarshalError
-	}
-	if rawMessage.FromDataRelay == true {
-		logrus.Info("Message From Relay : "+rawMessage.FromDataRelayAlias+" "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
-	} else {
-		logrus.Info("Message: "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
-	}
-	return &rawMessage, nil
+	return sendPriceUpdateError
 }
 
 func main() {
@@ -178,15 +190,6 @@ func main() {
 
 	log.SetFlags(log.Lshortfile)
 
-	previousTime := time.Now().UTC()
-	timeToTest := time.Now().UTC().Add(time.Duration(-3600) * time.Second)
-
-	_ = previousTime
-	_ = timeToTest
-
-	logrus.Info(previousTime)
-	logrus.Info(timeToTest)
-
 	client := NewDevClient(config)
 	connectionError := client.connect()
 	if connectionError != nil {
@@ -202,11 +205,8 @@ func main() {
 
 func (c *DevClient) outputOptions() {
 	log.Println("> Select one of the options below to test data-relay-service.")
-	log.Println("1. Ping Service")
-	log.Println("2. PriceUpdateMessage")
-	log.Println("3. OrderFilledMessage")
-	log.Println("4. Subscribe to Data Channel")
-	log.Println("5. Unsubscribe From Data Channel")
+	log.Println("1. PriceUpdateMessage")
+	log.Println("2. OrderFilledMessage")
 	log.Println("Press q to quit")
 	log.Println(">")
 }
@@ -225,44 +225,20 @@ func (c *DevClient) processInput() {
 			break
 		}
 		switch strings.TrimSpace(input) {
+
 		case "1":
-			pingError := c.sendPingMessage()
-			if pingError != nil {
-				log.Println(pingError)
-			}
-			break
-		case "2":
 			priceUpdateError := c.sendPriceUpdate()
 			if priceUpdateError != nil {
-				log.Println(priceUpdateError)
+				logrus.Error(priceUpdateError)
 			}
-		case "3":
+		case "2":
 			orderFilledError := c.sendOrderFilled()
 			if orderFilledError != nil {
-				log.Println(orderFilledError)
-			}
-		case "4":
-			subscribeError := c.sendSubscriptionMessage()
-			if subscribeError != nil {
-				log.Println(subscribeError)
-			}
-		case "5":
-			unSubscribeError := c.sendUnsubscribeMessage()
-			if unSubscribeError != nil {
-				log.Println(unSubscribeError)
+				logrus.Error(orderFilledError)
 			}
 		default:
 			break
 		}
-		rawMessage, err := c.readResponse()
-		if err != nil {
-			log.Println(err)
-		}else {
-			if rawMessage.FromDataRelay == true {
-				logrus.Info("Message From Relay : "+rawMessage.FromDataRelayAlias+" "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
-			} else {
-				logrus.Info("Message: "+rawMessage.UUID+" "+rawMessage.TimeStamp.String()+" ", rawMessage.MessageType)
-			}
-		}
+
 	}
 }

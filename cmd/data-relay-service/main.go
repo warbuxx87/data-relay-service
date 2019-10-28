@@ -172,13 +172,12 @@ func main() {
 
 	// Create the server manager
 
-	dataContext.TLSServerManager = tls_server.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.RedisClient)
+	dataContext.TLSServerManager = tls_server.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.Config.DataRelayDiscoveryServiceAlias, dataContext.RedisClient)
 
 	dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.TLSServerManager, dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
 
 	go dataContext.DataExchangeMgr.ProcessServiceUpdates()
 	go dataContext.TLSServerManager.CheckRedisConnection()
-	go dataContext.TLSServerManager.PingClients()
 
 	go api.ContinuousHealthCheck(&dataContext)
 

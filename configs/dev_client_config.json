@@ -4,6 +4,6 @@
 	"TLSSeverCertLocation": "certs/devcert.crt",
 	"TLSSeverKeyLocation": "certs/devcert.key",
 	"LogLevel": 1,
-	"AccessUUID": "",
-	"AccessToken": ""
+	"AccessUUID": "***REMOVED***",
+	"AccessToken": "***REMOVED***"
 }
