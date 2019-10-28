@@ -116,7 +116,7 @@ func (c *DevClient) sendOrderFilled() error {
 		if sendOrderFilledResponse.Success == false {
 			logrus.Error(sendOrderFilledResponse.ErrorStr)
 		}
-	} else {
+
 		logrus.Info("Send order filled success")
 	}
 

@@ -3,7 +3,6 @@ module bitbucket.org/project-alkemi/data-relay-service
 go 1.12
 
 require (
-	bitbucket.org/project-alkemi/common-message-pkg v0.0.0-20190828232826-b878276e3f4a
 	bitbucket.org/project-alkemi/common-pkg v0.0.0-20191027073620-df6325164e6b
 	bitbucket.org/project-alkemi/dr-discovery-service-api v0.0.0-20190911052507-dbfce2373c92
 	github.com/getsentry/sentry-go v0.3.0
