@@ -180,6 +180,24 @@ func (c *DevClient) ReceiveAllData() error {
 	return nil
 }
 
+func (c *DevClient) ReceiveAlkemiCompletedOrders() error {
+	stream, err := (*c.client).ReceiveAlkemiCompletedOrders(context.Background(), &messages.Empty{})
+	if err != nil {
+		return err
+	}
+	go func(stream services.DataRelayService_ReceiveAlkemiCompletedOrdersClient) {
+		for {
+			message, err := stream.Recv()
+			if err != nil {
+				c.clientError <- err
+				break
+			}
+			log.Printf("Stream message: Type=%s", message.MessageType.String())
+		}
+	}(stream)
+	return nil
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	prod := flag.Bool("prod", false, "Use '$go run ./cmd/... -prod' to set to true, changing default configuration file from 'dev.json' to 'config.json'")
@@ -224,6 +242,7 @@ func (c *DevClient) outputOptions() {
 	log.Println("1. PriceUpdateMessage")
 	log.Println("2. OrderFilledMessage")
 	log.Println("3. ReceiveAllData")
+	log.Println("4. ReceiveAlkemiCompletedOrders")
 	log.Println("Press q to quit")
 	log.Println(">")
 }
@@ -254,6 +273,17 @@ func (c *DevClient) processInput() {
 			}
 		case "3":
 			streamError := c.ReceiveAllData()
+			if streamError != nil {
+				log.Printf("Stream error: %v", streamError)
+				return
+			}
+			logrus.Info("Waiting for error...")
+			err := <- c.clientError
+			logrus.Errorf("Stream Error: %v", err)
+			close(c.clientError)
+			os.Exit(1)
+		case "4":
+			streamError := c.ReceiveAlkemiCompletedOrders()
 			if streamError != nil {
 				log.Printf("Stream error: %v", streamError)
 				return
