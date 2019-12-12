@@ -27,7 +27,6 @@ import (
 )
 
 func connectToDatabase(config *util.Configuration) (*gorm.DB, error) {
-
 	database, databaseError := gorm.Open("sqlite3", "datacache.db")
 
 	if databaseError != nil {
