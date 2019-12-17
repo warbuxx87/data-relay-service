@@ -197,13 +197,12 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Info("pinging redis server...")
-			result, redisError := tlsServerManager.RedisClient.Ping().Result()
+			_, redisError := tlsServerManager.RedisClient.Ping().Result()
 			if redisError != nil {
 				logrus.Warn("redis PING command failed: ", redisError)
 				sentry.CaptureException(errors.Wrap(redisError, "redis PING command failed"))
 			} else {
-				logrus.Info("Redis server response: ", result)
+				// logrus.Info("Redis server response: ", result)
 			}
 		}
 	}

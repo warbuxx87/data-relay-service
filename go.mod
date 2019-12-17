@@ -15,8 +15,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/objx v0.2.0 // indirect
 	golang.org/x/net v0.0.0-20190607181551-461777fb6f67
-	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/grpc v1.19.0
 )

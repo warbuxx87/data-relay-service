@@ -34,7 +34,6 @@ func CreateDataExchangeManager(tlsServerManager *tls_server.TLSServerManager, re
 func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 
 	for {
-
 		// Update the services list
 		if time.Now().UTC().Sub(dataExchangeManager.LastServiceUpdateCheck).Seconds() > 5 {
 
@@ -44,7 +43,6 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 		}
 
 		// Listen on data channels for response
-
 		for key, value := range dataExchangeManager.CurrentSubscriptions {
 
 			select {
@@ -53,7 +51,6 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 				logrus.Info("Got payload from : " + key)
 
 				var alkemiMessage messages.AlkemiMessage
-
 				alkemiUnmarshalError := proto.UnmarshalText(msg.Payload, &alkemiMessage)
 
 				if alkemiUnmarshalError != nil {
@@ -117,7 +114,6 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 }
 
 func (dataExchangeManager *DataExchangeManager) UpdateActiveServices() {
-
 	allServicesResponse, allServicesResponseError := dataExchangeManager.DiscoveryServiceApi.RetrieveAllServices()
 
 	if allServicesResponseError != nil {
@@ -125,9 +121,7 @@ func (dataExchangeManager *DataExchangeManager) UpdateActiveServices() {
 		sentry.CaptureException(allServicesResponseError)
 		return
 	}
-
 	// First we need to go through our current list and see if the channel is still in the services list
-
 	for key, value := range dataExchangeManager.CurrentSubscriptions {
 
 		if key != dataExchangeManager.DiscoveryServiceApi.UUID {
