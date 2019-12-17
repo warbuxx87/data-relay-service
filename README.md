@@ -21,11 +21,6 @@ go run bitbucket.org/project-alkemi/data-relay-service/cmd/data-relay-service
 go test bitbucket.org/project-alkemi/data-relay-service/cmd/data-relay-service
 ```
 
-## Author
-
-👤 **Raynaldo Rivera**
-
-* Github: [@R4stl1n](https://github.com/R4stl1n)
 
 ## 🤝 Contributing
 

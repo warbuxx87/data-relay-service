@@ -1,18 +1,52 @@
-# This is a sample build configuration for Go.
-# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: golang:1.12
+image:                               atlassian/default-image:2
 
 pipelines:
   default:
     - step:
-        script: # Modify the commands below to build your repository.
-          - PACKAGE_PATH="${GOPATH}/src/bitbucket.org/${BITBUCKET_REPO_FULL_NAME}"
-          - mkdir -pv "${PACKAGE_PATH}"
-          - tar -cO --exclude-vcs --exclude=bitbucket-pipelines.yml . | tar -xv -C "${PACKAGE_PATH}"
-          - cd "${PACKAGE_PATH}"
-          - go get -v
-          - go build -v
-          - go test -v
+        name:                        "Build and Test"
+        deployment:                  test
+        script:
+          - echo "Build, Upload and Test!"
+          - zip -r application.zip .
+          - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+            variables:
+              AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
+              APPLICATION_NAME:      'data-relay-service'
+              COMMAND:               'upload-only'
+              ZIP_FILE:              'application.zip'
+              VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+        artifacts:
+        - docker-multicontainer-v2.zip
+    - step:
+        name:                        "Deploy to Staging"
+        deployment:                  staging
+        script:
+        - echo "Deployment to Staging!"
+        - pipe:                      atlassian/aws-elasticbeanstalk-deploy:0.2.3
+          variables:
+            AWS_ACCESS_KEY_ID:       $AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY:   $AWS_SECRET_ACCESS_KEY
+            AWS_DEFAULT_REGION:      $AWS_DEFAULT_REGION
+            APPLICATION_NAME:        'data-relay-service'
+            COMMAND:                 'deploy-only'
+            VERSION_LABEL:           'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+            ENVIRONMENT_NAME:        'data-relay-service-staging'
+            WAIT:                    'true'
+    - step:
+        name:                        "Deploy to Production"
+        deployment:                  production
+        trigger:                     manual
+        script:
+          - echo "Deployment to Production!"
+          - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+            variables:
+              AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
+              APPLICATION_NAME:      'data-relay-service'
+              COMMAND:               'deploy-only'
+              VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+              ENVIRONMENT_NAME:      'data-relay-service-production'
+              WAIT:                  'true'
