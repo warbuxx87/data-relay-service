@@ -36,8 +36,8 @@ type ClientConfiguration struct {
 	TLSSeverCertLocation string
 	TLSSeverKeyLocation  string
 	// 0 = Info, 1 = Debug
-	LogLevel int
-	AccessUUID string
+	LogLevel    int
+	AccessUUID  string
 	AccessToken string
 }
 
@@ -143,8 +143,8 @@ func defaultClientConfig() *ClientConfiguration {
 		TLSSeverCertLocation: "certs/devcert.crt",
 		TLSSeverKeyLocation:  "certs/devcert.key",
 		LogLevel:             1,
-		AccessToken: "",
-		AccessUUID: "",
+		AccessToken:          "",
+		AccessUUID:           "",
 	}
 }
 

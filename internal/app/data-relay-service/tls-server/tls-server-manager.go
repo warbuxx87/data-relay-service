@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/project-alkemi/common-pkg/gen/consts"
 	"bitbucket.org/project-alkemi/common-pkg/gen/messages"
 	"bitbucket.org/project-alkemi/common-pkg/gen/services"
+	"bitbucket.org/project-alkemi/data-relay-service/internal/app/data-relay-service/util"
 	"fmt"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-redis/redis"
@@ -133,7 +134,7 @@ func (tlsServerManager *TLSServerManager) SendData(ctx context.Context, alkemiMe
 					logrus.Info("Sending message to: ", conn.Stream)
 
 					if streamSendError != nil {
-						logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
+						logrus.Errorf(StrStreamSendError, conn.Stream, streamSendError)
 						conn.Active = false
 						conn.Error <- streamSendError
 					}
@@ -166,7 +167,7 @@ func (tlsServerManager *TLSServerManager) SendData(ctx context.Context, alkemiMe
 				logrus.Info("Sending message to: ", conn.Stream)
 
 				if streamSendError != nil {
-					logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
+					logrus.Errorf(StrStreamSendError, conn.Stream, streamSendError)
 					conn.Active = false
 					conn.Error <- streamSendError
 				}

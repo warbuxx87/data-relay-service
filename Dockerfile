@@ -4,7 +4,7 @@ COPY . /app
 WORKDIR /app
 # install gcc and other dependencies
 # gcc is required by sqlite database that is required to run this app
-RUN set -ex && apk add --no-cache gcc musl-dev git
+RUN set -ex && apk add --no-cache gcc musl-dev git mercurial
 RUN apk update && apk add --no-cache ca-certificates
 # download deps and build app
 RUN go get ./...

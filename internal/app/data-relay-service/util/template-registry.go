@@ -32,7 +32,7 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 	tmpl, ok := t.Templates[name]
 
 	if !ok {
-		err := errors.New("Template not found -> " + name)
+		err := errors.New(StrTemplateNotFoundError + name)
 		return err
 	}
 
