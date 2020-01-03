@@ -9,6 +9,9 @@ import (
 	"net/http"
 )
 
+// CheckForDefaultUser : function
+// @Description ensures app has initial user at launch
+// @Summary Checks for default admin user in database
 func CheckForDefaultUser(database *gorm.DB, config *Configuration) {
 
 	var userModel models.UserModel
