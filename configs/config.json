@@ -2,7 +2,7 @@
 	"ListenIp": "0.0.0.0",
 	"ListenPort": 7070,
 	"SentryUrl": "https://3ba2fa874ab34d708b450cc42f2c6e38@sentry.io/1867379",
-	"RedisIP": "localhost",
+	"RedisIP": "data-relay.myjyz8.0001.cac1.cache.amazonaws.com",
 	"RedisPort": 6379,
 	"DataRelayDiscoveryServiceUrl": "https://discovery.alkemi.tech:7060",
 	"DataRelayDiscoveryRegisterKey": "***REMOVED***",
