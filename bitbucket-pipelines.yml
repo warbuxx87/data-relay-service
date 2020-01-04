@@ -1,10 +1,10 @@
-image:                               golang:1.12.6-alpine
+image:                                 golang:1.12.6-alpine
 
 pipelines:
   default:
     - step:
-        name:                        "Test & Build"
-        deployment:                  test
+        name:                          "Test & Build"
+        deployment:                    test
         script:
           - echo "Test & Build"
           - set -ex && apk add --no-cache gcc musl-dev git mercurial zip openssh
@@ -14,60 +14,60 @@ pipelines:
           - go mod vendor
           - go test -v -mod=vendor cmd/data-relay-service/main.go
           - cd cmd/data-relay-service && CGO_ENABLED=1 GOOS=linux go build -v -mod=vendor -o data-relay-service -a -installsuffix cgo -ldflags '-w'
-branches:
+  branches:
     master:
-    - step:
-        name:                        "Test, Build, Upload"
-        deployment:                  test
-        script:
-          - echo "Test & Build"
-          - set -ex && apk add --no-cache gcc musl-dev git mercurial zip openssh
-          - apk update && apk add --no-cache ca-certificates
-          - git config --global url."git@bitbucket.org:".insteadOf "https://bitbucket.org/"
-          - go get -v
-          - go mod vendor
-          - go test -v -mod=vendor cmd/data-relay-service/main.go
-          - cd cmd/data-relay-service && CGO_ENABLED=1 GOOS=linux go build -v -mod=vendor -o data-relay-service -a -installsuffix cgo -ldflags '-w'
-          - echo "Uploading Build to AWS"
-          - cd $BITBUCKET_CLONE_DIR
-          - zip -r application.zip .
-          - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+      - step:
+          name:                        "Test, Build, Upload"
+          deployment:                  test
+          script:
+            - echo "Test & Build"
+            - set -ex && apk add --no-cache gcc musl-dev git mercurial zip openssh
+            - apk update && apk add --no-cache ca-certificates
+            - git config --global url."git@bitbucket.org:".insteadOf "https://bitbucket.org/"
+            - go get -v
+            - go mod vendor
+            - go test -v -mod=vendor cmd/data-relay-service/main.go
+            - cd cmd/data-relay-service && CGO_ENABLED=1 GOOS=linux go build -v -mod=vendor -o data-relay-service -a -installsuffix cgo -ldflags '-w'
+            - echo "Uploading Build to AWS"
+            - cd $BITBUCKET_CLONE_DIR
+            - zip -r application.zip .
+            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+              variables:
+                AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
+                APPLICATION_NAME:      'data-relay'
+                COMMAND:               'upload-only'
+                ZIP_FILE:              'application.zip'
+                VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+      - step:
+          name:                        "Deploy to Staging"
+          deployment:                  staging
+          script:
+          - echo "Deployment to Staging!"
+          - pipe:                      atlassian/aws-elasticbeanstalk-deploy:0.2.3
             variables:
-              AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
-              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
-              APPLICATION_NAME:      'data-relay'
-              COMMAND:               'upload-only'
-              ZIP_FILE:              'application.zip'
-              VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
-    - step:
-        name:                        "Deploy to Staging"
-        deployment:                  staging
-        script:
-        - echo "Deployment to Staging!"
-        - pipe:                      atlassian/aws-elasticbeanstalk-deploy:0.2.3
-          variables:
-            AWS_ACCESS_KEY_ID:       $AWS_ACCESS_KEY_ID
-            AWS_SECRET_ACCESS_KEY:   $AWS_SECRET_ACCESS_KEY
-            AWS_DEFAULT_REGION:      $AWS_DEFAULT_REGION
-            APPLICATION_NAME:        'data-relay'
-            COMMAND:                 'deploy-only'
-            VERSION_LABEL:           'data-relay-service-$BITBUCKET_BUILD_NUMBER'
-            ENVIRONMENT_NAME:        'data-relay-service-staging'
-            WAIT:                    'true'
-    - step:
-        name:                        "Deploy to Production"
-        deployment:                  production
-        trigger:                     manual
-        script:
-          - echo "Deployment to Production!"
-          - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
-            variables:
-              AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
-              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
-              APPLICATION_NAME:      'data-relay'
-              COMMAND:               'deploy-only'
-              VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
-              ENVIRONMENT_NAME:      'data-relay-service-production'
-              WAIT:                  'true'
+              AWS_ACCESS_KEY_ID:       $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY:   $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION:      $AWS_DEFAULT_REGION
+              APPLICATION_NAME:        'data-relay'
+              COMMAND:                 'deploy-only'
+              VERSION_LABEL:           'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+              ENVIRONMENT_NAME:        'data-relay-service-staging'
+              WAIT:                    'true'
+      - step:
+          name:                        "Deploy to Production"
+          deployment:                  production
+          trigger:                     manual
+          script:
+            - echo "Deployment to Production!"
+            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+              variables:
+                AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION:    $AWS_DEFAULT_REGION
+                APPLICATION_NAME:      'data-relay'
+                COMMAND:               'deploy-only'
+                VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
+                ENVIRONMENT_NAME:      'data-relay-service-production'
+                WAIT:                  'true'
