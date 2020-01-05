@@ -36,8 +36,8 @@ type ClientConfiguration struct {
 	TLSSeverCertLocation string
 	TLSSeverKeyLocation  string
 	// 0 = Info, 1 = Debug
-	LogLevel int
-	AccessUUID string
+	LogLevel    int
+	AccessUUID  string
 	AccessToken string
 }
 
@@ -121,12 +121,12 @@ func generateDefaultConfig(filename string) error {
 func defaultConfig() *Configuration {
 	return &Configuration{
 		ListenIp:                       "127.0.0.1",
-		ListenPort:                     7070,
+		ListenPort:                     7030,
 		SentryUrl:                      "",
 		RedisIP:                        "localhost",
 		RedisPort:                      6379,
 		TLSSeverIp:                     "127.0.0.1",
-		TLSSeverPort:                   7771,
+		TLSSeverPort:                   7031,
 		TLSSeverCertLocation:           "certs/devcert.crt",
 		TLSSeverKeyLocation:            "certs/devcert.key",
 		DataRelayDiscoveryServiceUrl:   "http://localhost:7060",
@@ -139,12 +139,12 @@ func defaultConfig() *Configuration {
 func defaultClientConfig() *ClientConfiguration {
 	return &ClientConfiguration{
 		TLSSeverIp:           "127.0.0.1",
-		TLSSeverPort:         7771,
+		TLSSeverPort:         7031,
 		TLSSeverCertLocation: "certs/devcert.crt",
 		TLSSeverKeyLocation:  "certs/devcert.key",
 		LogLevel:             1,
-		AccessToken: "",
-		AccessUUID: "",
+		AccessToken:          "",
+		AccessUUID:           "",
 	}
 }
 
