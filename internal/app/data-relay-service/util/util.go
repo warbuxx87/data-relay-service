@@ -76,7 +76,7 @@ func LoadClientConfiguration(filename string) (*ClientConfiguration, error) {
 			return nil, err
 		}
 	}
-	log.Info("Loading client configuration from %s:", configPath)
+	log.Printf("Loading client configuration from %s:", configPath)
 	config := &ClientConfiguration{}
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
@@ -129,7 +129,7 @@ func defaultConfig() *Configuration {
 		TLSSeverPort:                   7031,
 		TLSSeverCertLocation:           "certs/devcert.crt",
 		TLSSeverKeyLocation:            "certs/devcert.key",
-		DataRelayDiscoveryServiceUrl:   "http://localhost:7060",
+		DataRelayDiscoveryServiceUrl:   "http://localhost:7020",
 		DataRelayDiscoveryRegisterKey:  "registerme",
 		DataRelayDiscoveryServiceAlias: "SomeAlias",
 		LogLevel:                       1,
@@ -139,7 +139,7 @@ func defaultConfig() *Configuration {
 func defaultClientConfig() *ClientConfiguration {
 	return &ClientConfiguration{
 		TLSSeverIp:           "127.0.0.1",
-		TLSSeverPort:         7031,
+		TLSSeverPort:         7051,
 		TLSSeverCertLocation: "certs/devcert.crt",
 		TLSSeverKeyLocation:  "certs/devcert.key",
 		LogLevel:             1,

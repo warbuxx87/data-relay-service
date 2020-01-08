@@ -1,17 +1,16 @@
 {
 	"ListenIp": "127.0.0.1",
 	"ListenPort": 7030,
-	"SentryUrl": "https://3ba2fa874ab34d708b450cc42f2c6e38@sentry.io/1867379",
+	"SentryUrl": "",
 	"RedisIP": "localhost",
 	"RedisPort": 6379,
-	"DataRelayDiscoveryServiceUrl": "https://discovery.alkemi.tech",
-	"DataRelayDiscoveryRegisterKey": "***REMOVED***",
-	"DataRelayDiscoveryServiceAlias": "SomeAlias",
+	"DataRelayDiscoveryServiceUrl": "http://localhost:7020",
+	"DataRelayDiscoveryRegisterKey": "register-me",
+	"DataRelayDiscoveryServiceAlias": "Data Relay 1",
 	"TLSSeverIp": "127.0.0.1",
-	"TLSSeverPort": 7031,
+	"TLSSeverPort": 7031	,
 	"TLSSeverCertLocation": "certs/devcert.crt",
 	"TLSSeverKeyLocation": "certs/devcert.key",
 	"LogLevel": 1,
-	"JWTSecret": "***REMOVED***",
 	"HealthCheckFrequency": 0
 }

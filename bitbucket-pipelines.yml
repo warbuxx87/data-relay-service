@@ -31,7 +31,7 @@ pipelines:
             - echo "Uploading Build to AWS"
             - cd $BITBUCKET_CLONE_DIR
             - zip -r application.zip .
-            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.5.4
               variables:
                 AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
                 AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
@@ -60,8 +60,8 @@ pipelines:
           deployment:                  production
           trigger:                     manual
           script:
-            - echo "Deployment to Production!"
-            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.2.3
+            - echo "Deploying to Production!"
+            - pipe:                    atlassian/aws-elasticbeanstalk-deploy:0.5.4
               variables:
                 AWS_ACCESS_KEY_ID:     $AWS_ACCESS_KEY_ID
                 AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY

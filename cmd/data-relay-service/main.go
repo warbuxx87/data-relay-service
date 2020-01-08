@@ -49,6 +49,24 @@ func init() {
 	logrus.SetLevel(logrus.InfoLevel)
 }
 
+// @title Alkemi - Data Relay Service
+// @version 1.0
+// @description This service provides and facilitates the data service discovery
+
+// @contact.name Alkemi
+// @contact.url https://alkemi.network
+// @contact.email dev@alkemi.ai
+
+// @license.name Proprietary
+// @license.url
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
+// @host 127.0.0.1:7030
+// @BasePath /v1
+
 func main() {
 
 	util.ShowBanner()
@@ -88,19 +106,25 @@ func main() {
 	}
 
 	databaseConnection, databaseError := connectToDatabase(config)
+
 	if databaseError != nil {
 		logrus.Error(databaseError, nil)
 		sentry.CaptureException(databaseError)
 		return
-	} else {
-		logrus.Info("Successfully connected to database")
 	}
+	logrus.Info("Successfully connected to database")
 
 	// Create the data context
 	dataContext := util.DataContext{}
 
+	// Assign Config to Data Context
 	dataContext.Config = config
+
+	// Assign Database to dataContext
 	dataContext.Database = databaseConnection
+
+	// Assign Errors to dataContext
+	dataContext.Errors = &util.ErrorsStruct{}
 
 	// Create the redis connection
 	dataContext.RedisClient = redis.NewClient(&redis.Options{
@@ -113,13 +137,11 @@ func main() {
 
 	if redisConnectionError != nil {
 		logrus.Info("Failed to connect to redis server")
-
 		logrus.Fatal(redisConnectionError)
 		sentry.CaptureException(redisConnectionError)
 		return
-	} else {
-		logrus.Info("Successfully connected to redis server")
 	}
+	logrus.Info("Successfully connected to redis server")
 
 	defer func() {
 		redisConnCloseError := dataContext.RedisClient.Close()
@@ -169,16 +191,17 @@ func main() {
 		}
 	}()
 
-	// Create the server manager
-
+	// Create the TLS server manager
 	dataContext.TLSServerManager = tls_server.CreateTLSServerManager(dataContext.DiscoveryServiceAPI.UUID, dataContext.Config.DataRelayDiscoveryServiceAlias, dataContext.RedisClient)
 
+	// Create the DataExchangeMgr server manager
 	dataContext.DataExchangeMgr = managers.CreateDataExchangeManager(dataContext.TLSServerManager, dataContext.RedisClient, dataContext.DiscoveryServiceAPI)
 
+	// Start DataExchangeMgr ProcessServiceUpdates
 	go dataContext.DataExchangeMgr.ProcessServiceUpdates()
-	go dataContext.TLSServerManager.CheckRedisConnection()
 
-	go api.ContinuousHealthCheck(&dataContext)
+	// Start TLSServerManager CheckRedisConnection
+	go dataContext.TLSServerManager.CheckRedisConnection()
 
 	// Start the checkin function. We checkin every 10 seconds
 	go func() {
@@ -215,10 +238,19 @@ func main() {
 		}
 	})
 
-	e.Static("/static", "assets")
+	// sets up static files inside the assets folder to be served for front end web service
+	e.Static("/", "assets")
 
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte(uuid.NewV4().String()))))
+
 	e.Use(middleware.Logger())
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowHeaders:     []string{"authorization", "Content-Type"},
+		AllowCredentials: true,
+		AllowMethods:     []string{echo.OPTIONS, echo.GET, echo.POST},
+	}))
 
 	templates := make(map[string]*template.Template)
 
@@ -239,7 +271,10 @@ func main() {
 
 	e.GET("/action/logout", api.LogoutAction)
 	e.POST("/action/login", api.LoginAction)
-	e.GET("/health", api.HealthCheckAction)
+
+	// Start API ContinuousHealthCheck
+	go api.ContinuousHealthCheck(&dataContext)
+	e.GET("/v1/health", api.HealthCheckAction)
 
 	// Start tls server
 	go func() {
@@ -252,5 +287,6 @@ func main() {
 		}
 	}()
 
+	// Start echo web service with Logging
 	e.Logger.Fatal(e.Start(config.ListenIp + ":" + strconv.Itoa(config.ListenPort)))
 }
