@@ -21,7 +21,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
-	github.com/xeipuuv/gojsonpointer v0.0.0-20190809123943-df4f5c81cb3b // indirect
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 	google.golang.org/grpc v1.19.0
 )

@@ -1,6 +1,6 @@
 {
 	"TLSSeverIp": "localhost",
-	"TLSSeverPort": 7771,
+	"TLSSeverPort": 7031,
 	"TLSSeverCertLocation": "certs/devcert.crt",
 	"TLSSeverKeyLocation": "certs/devcert.key",
 	"LogLevel": 1,
