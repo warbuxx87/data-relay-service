@@ -10,16 +10,15 @@ import (
 	"time"
 )
 
-// Generalized Health Check endpoint
+// HealthCheckAction Generalized Health Check endpoint godoc
 // @Summary Validates that service is up and running
 // @Description Health Check for service
 // @Accept  json
 // @Produce  json
-// @Tags Exchange
 // @Tags  Health Check
 // @Success 200 {object} responses.HealthCheckResponse ""
 // @Failure 200 {object} responses.HealthCheckResponse ""
-// @Router /health [get]
+// @Router /v1/health [get]
 func HealthCheckAction(c echo.Context) error {
 	cc := c.(*util.EndpointContext)
 

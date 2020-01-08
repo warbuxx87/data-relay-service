@@ -1,0 +1,16 @@
+{
+	"ListenIp": "0.0.0.0",
+	"ListenPort": 7030,
+	"SentryUrl": "",
+	"RedisIP": "localhost",
+	"RedisPort": 6379,
+	"DataRelayDiscoveryServiceUrl": "https://discovery.alkemi.tech",
+	"DataRelayDiscoveryRegisterKey": "***REMOVED***",
+	"DataRelayDiscoveryServiceAlias": "Data Relay 1",
+	"TLSSeverIp": "0.0.0.0",
+	"TLSSeverPort": 7031	,
+	"TLSSeverCertLocation": "certs/devcert.crt",
+	"TLSSeverKeyLocation": "certs/devcert.key",
+	"LogLevel": 1,
+	"HealthCheckFrequency": 0
+}

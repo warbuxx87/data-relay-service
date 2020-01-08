@@ -1,21 +1,30 @@
 {{define "base.html"}}
-    <!DOCTYPE html>
-    <html>
 
-    <head>
-        <meta charset="utf-8">
-        <title>Alkemi Dashboard- {{template "title" .}}</title>
+<!DOCTYPE html>
+<html lang="en">
 
-        {{template "style" .}}
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="The DR (Data Relay) only has one function. This function is to relay the trade completion information to the currently completed oracles and the VWAP index service. This is done by using either rest or WebSockets to facilitate the data transfer. The Oracles will connect to the DR’s to collect this information. DR’s will be created as a micro-service that way we can have multiple data relays available for redundancy to the oracles.">
+    <meta name="author" content="Alkemi">
+    <title>Alkemi | Data Relay Service - {{template "title" .}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <!-- Custom fonts for this template-->
+    <link href="lib/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&amp;display=swap" rel="stylesheet">
+    <!-- Custom styles for this template-->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    {{template "style" .}}
+  </head>
 
-    </head>
+  {{template "content" .}}
 
-    <body>
 
-    {{template "content" .}}
+  {{template "scripts" .}}
 
-    </body>
-
-    {{template "scripts" .}}
-    </html>
+</html>
 {{end}}
