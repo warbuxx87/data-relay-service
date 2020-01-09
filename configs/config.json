@@ -10,7 +10,7 @@
 	"RedisPort": 6379,
 	"DataRelayDiscoveryServiceUrl": "https://discovery.alkemi.tech",
 	"DataRelayDiscoveryServiceAlias": "SomeAlias",
-	"DataRelayDiscoveryRegisterKey": "***REMOVED***",
+	"DataRelayDiscoveryRegisterKey": "randomkey",
 	"JWTSecret": "***REMOVED***",
 	"LogLevel": 1,
 	"HealthCheckFrequency": 0
