@@ -3,6 +3,8 @@ image:                                 golang:1.12.6-alpine
 pipelines:
   default:
     - step:
+        caches:
+          - gomodules
         name:                          "Test & Build"
         deployment:                    test
         script:
@@ -71,3 +73,6 @@ pipelines:
                 VERSION_LABEL:         'data-relay-service-$BITBUCKET_BUILD_NUMBER'
                 ENVIRONMENT_NAME:      'data-relay-service-production'
                 WAIT:                  'true'
+definitions:
+  caches:
+    gomodules:                         vendor
