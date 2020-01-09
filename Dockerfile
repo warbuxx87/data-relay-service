@@ -4,4 +4,5 @@ RUN mkdir /app
 COPY . /app
 WORKDIR /app
 EXPOSE 7030
+EXPOSE 7031
 ENTRYPOINT [ "/app/cmd/data-relay-service/data-relay-service", "--prod" ]
