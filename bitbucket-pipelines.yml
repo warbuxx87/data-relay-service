@@ -19,6 +19,8 @@ pipelines:
   branches:
     master:
       - step:
+          caches:
+            - gomodules
           name:                        "Test, Build, Upload"
           deployment:                  test
           script:
