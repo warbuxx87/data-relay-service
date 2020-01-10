@@ -1,9 +1,9 @@
 {
-  "TLSSeverIp": "ec2-35-182-221-195.ca-central-1.compute.amazonaws.com",
+  "TLSSeverIp": "tls-relay.alkemi.tech",
   "TLSSeverPort": 7031,
-  "TLSSeverCertLocation": "certs/cert.crt",
-  "TLSSeverKeyLocation": "certs/key.key",
+  "TLSSeverCertLocation": "certs/tls-relay.crt",
+  "TLSSeverKeyLocation": "certs/tls-relay.key",
   "LogLevel": 1,
-  "AccessUUID": "",
-  "AccessToken": ""
+  "AccessUUID": "***REMOVED***",
+  "AccessToken": "***REMOVED***"
 }
