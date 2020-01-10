@@ -9,8 +9,8 @@
 	"RedisIP": "data-relay.myjyz8.0001.cac1.cache.amazonaws.com",
 	"RedisPort": 6379,
 	"DataRelayDiscoveryServiceUrl": "https://discovery.alkemi.tech",
-	"DataRelayDiscoveryServiceAlias": "SomeAlias",
-	"DataRelayDiscoveryRegisterKey": "randomkey",
+	"DataRelayDiscoveryServiceAlias": "DR 02",
+	"DataRelayDiscoveryRegisterKey": "***REMOVED***",
 	"JWTSecret": "***REMOVED***",
 	"LogLevel": 1,
 	"HealthCheckFrequency": 0
