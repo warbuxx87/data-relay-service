@@ -57,7 +57,7 @@ pipelines:
               APPLICATION_NAME:        'data-relay'
               COMMAND:                 'deploy-only'
               VERSION_LABEL:           'data-relay-service-$BITBUCKET_BUILD_NUMBER'
-              ENVIRONMENT_NAME:        'data-relay-service-staging'
+              ENVIRONMENT_NAME:        'data-relay-staging2'
               WAIT:                    'true'
       - step:
           name:                        "Deploy to Production"
