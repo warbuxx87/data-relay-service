@@ -1,10 +1,9 @@
 {
-
-  "TLSSeverIp": "127.0.0.1",
+  "TLSSeverIp": "ec2-35-182-221-195.ca-central-1.compute.amazonaws.com",
   "TLSSeverPort": 7031,
-  "TLSSeverCertLocation": "certs/devcert.crt",
-  "TLSSeverKeyLocation": "certs/devcert.key",
+  "TLSSeverCertLocation": "certs/cert.crt",
+  "TLSSeverKeyLocation": "certs/key.key",
   "LogLevel": 1,
-  "AccessUUID" : "",
-  "AccessToken" : ""
+  "AccessUUID": "",
+  "AccessToken": ""
 }
