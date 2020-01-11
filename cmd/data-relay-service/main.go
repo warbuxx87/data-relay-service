@@ -83,7 +83,7 @@ func main() {
 
 	config, configLoadError := util.LoadConfigurationFile(configFilename)
 	if configLoadError != nil {
-		logrus.Fatalf("failed to load app configuration; %v", configLoadError)
+		logrus.Fatalf(util.StrConfigLoadError, configLoadError)
 		os.Exit(1)
 	}
 
@@ -112,7 +112,7 @@ func main() {
 		sentry.CaptureException(databaseError)
 		return
 	}
-	logrus.Info("Successfully connected to database")
+	logrus.Info(util.StrDatabaseConnected)
 
 	// Create the data context
 	dataContext := util.DataContext{}
@@ -136,12 +136,11 @@ func main() {
 	_, redisConnectionError := dataContext.RedisClient.Ping().Result()
 
 	if redisConnectionError != nil {
-		logrus.Info("Failed to connect to redis server")
 		logrus.Fatal(redisConnectionError)
 		sentry.CaptureException(redisConnectionError)
 		return
 	}
-	logrus.Info("Successfully connected to redis server")
+	logrus.Info(util.StrRedisConnectSuccess)
 
 	defer func() {
 		redisConnCloseError := dataContext.RedisClient.Close()
@@ -165,29 +164,29 @@ func main() {
 	}
 
 	if registerResponse.Success == false {
-		logrus.Error("Failed to register to discovery service")
+		logrus.Error(util.StrDiscoveryRegFail)
 		logrus.Fatal(registerResponse.ErrorMessage)
 		sentry.CaptureMessage(registerResponse.ErrorMessage)
 		return
 	} else {
-		logrus.Info("Successfully registered with discovery service")
+		logrus.Info(util.StrDiscoveryRegSuccess)
 	}
 
 	defer func() {
 		unRegisterResponse, unRegisterResponseError := dataContext.DiscoveryServiceAPI.UnRegisterService()
 
 		if unRegisterResponseError != nil {
-			logrus.Error("Failed to unregister with discovery service")
+			logrus.Error(util.StrDiscoveryUnRegFail)
 			logrus.Error(unRegisterResponseError)
 			sentry.CaptureException(unRegisterResponseError)
 		}
 
 		if unRegisterResponse.Success == false {
-			logrus.Error("Failed to unregister with discovery service")
+			logrus.Error(util.StrDiscoveryUnRegFail)
 			logrus.Error(unRegisterResponse.ErrorMessage)
 			sentry.CaptureMessage(unRegisterResponse.ErrorMessage)
 		} else {
-			logrus.Info("UnRegistered with discovery service")
+			logrus.Info(util.StrDiscoveryUnRegSuccess)
 		}
 	}()
 
@@ -211,14 +210,14 @@ func main() {
 			checkInResponse, checkInResponseError := dataContext.DiscoveryServiceAPI.CheckIn()
 
 			if checkInResponseError != nil {
-				logrus.Error("CheckIn with discovery service failed")
+				logrus.Error(util.StrDiscoveryCheckFail)
 				logrus.Error(checkInResponseError)
 				sentry.CaptureException(checkInResponseError)
 				return
 			}
 
 			if checkInResponse.Success == false {
-				logrus.Error("CheckIn with discovery service failed")
+				logrus.Error(util.StrDiscoveryCheckFail)
 				logrus.Error(checkInResponse.ErrorMessage)
 				sentry.CaptureMessage(checkInResponse.ErrorMessage)
 			}

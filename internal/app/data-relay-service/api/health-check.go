@@ -44,7 +44,7 @@ func ContinuousHealthCheck(dc *util.DataContext) {
 		if err != nil {
 			dc.Errors.DBErrors = dc.Errors.DBErrors + 1
 			sentry.CaptureException(err)
-			logrus.Error("Error when connecting to database")
+			logrus.Error("Error when connecting to database.")
 		}
 	}
 }

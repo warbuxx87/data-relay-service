@@ -202,7 +202,7 @@ func (tlsServerManager *TLSServerManager) CheckRedisConnection() {
 				logrus.Warn("redis PING command failed: ", redisError)
 				sentry.CaptureException(errors.Wrap(redisError, "redis PING command failed"))
 			} else {
-				// logrus.Info("Redis server response: ", result)
+				//logrus.Info("Redis server response: ", result)
 			}
 		}
 	}

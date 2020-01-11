@@ -36,9 +36,9 @@ func randomInt(min, max int) int {
 }
 
 type DevClient struct {
-	config *util.ClientConfiguration
-	conn   *grpc.ClientConn
-	client *services.DataRelayServiceClient
+	config      *util.ClientConfiguration
+	conn        *grpc.ClientConn
+	client      *services.DataRelayServiceClient
 	clientError chan error
 }
 
@@ -253,7 +253,7 @@ func (c *DevClient) processInput() {
 	for {
 		input, inputError := reader.ReadString('\n')
 		if inputError != nil {
-			log.Println("Invalid input. Please try again")
+			log.Println(StrInvalidInputError)
 			continue
 		}
 		if strings.TrimSpace(strings.ToLower(input)) == "q" {
@@ -278,7 +278,7 @@ func (c *DevClient) processInput() {
 				return
 			}
 			logrus.Info("Waiting for error...")
-			err := <- c.clientError
+			err := <-c.clientError
 			logrus.Errorf("Stream Error: %v", err)
 			close(c.clientError)
 			os.Exit(1)
@@ -289,7 +289,7 @@ func (c *DevClient) processInput() {
 				return
 			}
 			logrus.Info("Waiting for error...")
-			err := <- c.clientError
+			err := <-c.clientError
 			logrus.Errorf("Stream Error: %v", err)
 			close(c.clientError)
 			os.Exit(1)
