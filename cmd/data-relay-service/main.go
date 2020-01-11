@@ -111,10 +111,8 @@ func main() {
 		logrus.Error(databaseError, nil)
 		sentry.CaptureException(databaseError)
 		return
-	} else {
-		logrus.Info(StrDatabaseConnected)
 	}
-	logrus.Info("Successfully connected to database")
+	logrus.Info(StrDatabaseConnected)
 
 	// Create the data context
 	dataContext := util.DataContext{}
@@ -138,12 +136,11 @@ func main() {
 	_, redisConnectionError := dataContext.RedisClient.Ping().Result()
 
 	if redisConnectionError != nil {
-		logrus.Info("Failed to connect to redis server")
 		logrus.Fatal(redisConnectionError)
 		sentry.CaptureException(redisConnectionError)
 		return
 	}
-	logrus.Info("Successfully connected to redis server")
+	logrus.Info(StrRedisConnectSuccess)
 
 	defer func() {
 		redisConnCloseError := dataContext.RedisClient.Close()
