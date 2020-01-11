@@ -1,0 +1,12 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Ports": [
+    {
+      "ContainerPort": "7030"
+    },
+    {
+      "ContainerPort": "7031",
+      "HostPort": "7031"
+    }
+  ]
+}

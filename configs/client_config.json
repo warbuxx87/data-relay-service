@@ -1,10 +1,9 @@
 {
-
-  "TLSSeverIp": "127.0.0.1",
-  "TLSSeverPort": 7771,
-  "TLSSeverCertLocation": "certs/devcert.crt",
-  "TLSSeverKeyLocation": "certs/devcert.key",
+  "TLSSeverIp": "tls-relay.alkemi.tech",
+  "TLSSeverPort": 7031,
+  "TLSSeverCertLocation": "certs/tls-relay.crt",
+  "TLSSeverKeyLocation": "certs/tls-relay.key",
   "LogLevel": 1,
-  "AccessUUID" : "",
-  "AccessToken" : ""
+  "AccessUUID": "***REMOVED***",
+  "AccessToken": "***REMOVED***"
 }
