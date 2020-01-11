@@ -83,7 +83,7 @@ func main() {
 
 	config, configLoadError := util.LoadConfigurationFile(configFilename)
 	if configLoadError != nil {
-		logrus.Fatalf(StrConfigLoadError, configLoadError)
+		logrus.Fatalf(util.StrConfigLoadError, configLoadError)
 		os.Exit(1)
 	}
 
@@ -112,7 +112,7 @@ func main() {
 		sentry.CaptureException(databaseError)
 		return
 	}
-	logrus.Info(StrDatabaseConnected)
+	logrus.Info(util.StrDatabaseConnected)
 
 	// Create the data context
 	dataContext := util.DataContext{}
@@ -140,7 +140,7 @@ func main() {
 		sentry.CaptureException(redisConnectionError)
 		return
 	}
-	logrus.Info(StrRedisConnectSuccess)
+	logrus.Info(util.StrRedisConnectSuccess)
 
 	defer func() {
 		redisConnCloseError := dataContext.RedisClient.Close()
@@ -164,29 +164,29 @@ func main() {
 	}
 
 	if registerResponse.Success == false {
-		logrus.Error(StrDiscoveryRegFail)
+		logrus.Error(util.StrDiscoveryRegFail)
 		logrus.Fatal(registerResponse.ErrorMessage)
 		sentry.CaptureMessage(registerResponse.ErrorMessage)
 		return
 	} else {
-		logrus.Info(StrDiscoveryRegSuccess)
+		logrus.Info(util.StrDiscoveryRegSuccess)
 	}
 
 	defer func() {
 		unRegisterResponse, unRegisterResponseError := dataContext.DiscoveryServiceAPI.UnRegisterService()
 
 		if unRegisterResponseError != nil {
-			logrus.Error(StrDiscoveryUnRegFail)
+			logrus.Error(util.StrDiscoveryUnRegFail)
 			logrus.Error(unRegisterResponseError)
 			sentry.CaptureException(unRegisterResponseError)
 		}
 
 		if unRegisterResponse.Success == false {
-			logrus.Error(StrDiscoveryUnRegFail)
+			logrus.Error(util.StrDiscoveryUnRegFail)
 			logrus.Error(unRegisterResponse.ErrorMessage)
 			sentry.CaptureMessage(unRegisterResponse.ErrorMessage)
 		} else {
-			logrus.Info(StrDiscoveryUnRegSuccess)
+			logrus.Info(util.StrDiscoveryUnRegSuccess)
 		}
 	}()
 
@@ -210,14 +210,14 @@ func main() {
 			checkInResponse, checkInResponseError := dataContext.DiscoveryServiceAPI.CheckIn()
 
 			if checkInResponseError != nil {
-				logrus.Error(StrDiscoveryCheckFail)
+				logrus.Error(util.StrDiscoveryCheckFail)
 				logrus.Error(checkInResponseError)
 				sentry.CaptureException(checkInResponseError)
 				return
 			}
 
 			if checkInResponse.Success == false {
-				logrus.Error(StrDiscoveryCheckFail)
+				logrus.Error(util.StrDiscoveryCheckFail)
 				logrus.Error(checkInResponse.ErrorMessage)
 				sentry.CaptureMessage(checkInResponse.ErrorMessage)
 			}

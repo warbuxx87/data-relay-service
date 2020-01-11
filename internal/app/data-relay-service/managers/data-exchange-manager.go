@@ -68,7 +68,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 									logrus.Info("Sending message to: ", conn.Stream)
 
 									if streamSendError != nil {
-										logrus.Errorf(StrStreamSendError, conn.Stream, streamSendError)
+										logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
 										conn.Active = false
 										conn.Error <- streamSendError
 									}
@@ -90,7 +90,7 @@ func (dataExchangeManager *DataExchangeManager) ProcessServiceUpdates() {
 								logrus.Info("Sending message to: ", conn.Stream)
 
 								if streamSendError != nil {
-									logrus.Errorf(StrStreamSendError, conn.Stream, streamSendError)
+									logrus.Errorf("Error with Stream: %v - Error: %v", conn.Stream, streamSendError)
 									conn.Active = false
 									conn.Error <- streamSendError
 								}
