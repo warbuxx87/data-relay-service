@@ -1,0 +1,44 @@
+basePath: /v1
+definitions:
+  responses.HealthCheckResponse:
+    properties:
+      authenticationErrors:
+        type: integer
+      currentlyHealthy:
+        type: boolean
+      databaseConnectionErrors:
+        type: integer
+    type: object
+host: 127.0.0.1:7030
+info:
+  contact:
+    email: dev@alkemi.ai
+    name: Alkemi
+    url: https://alkemi.network
+  description: This service provides and facilitates the data service discovery
+  license:
+    name: Proprietary
+  title: Alkemi - Data Relay Service
+  version: "1.0"
+paths:
+  /v1/health:
+    get:
+      consumes:
+      - application/json
+      description: Health Check for service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.HealthCheckResponse'
+      summary: Validates that service is up and running
+      tags:
+      - Health Check
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

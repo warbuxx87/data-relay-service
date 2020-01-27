@@ -1,0 +1,66 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This service provides and facilitates the data service discovery",
+        "title": "Alkemi - Data Relay Service",
+        "contact": {
+            "name": "Alkemi",
+            "url": "https://alkemi.network",
+            "email": "dev@alkemi.ai"
+        },
+        "license": {
+            "name": "Proprietary"
+        },
+        "version": "1.0"
+    },
+    "host": "127.0.0.1:7030",
+    "basePath": "/v1",
+    "paths": {
+        "/v1/health": {
+            "get": {
+                "description": "Health Check for service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health Check"
+                ],
+                "summary": "Validates that service is up and running",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.HealthCheckResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "responses.HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "authenticationErrors": {
+                    "type": "integer"
+                },
+                "currentlyHealthy": {
+                    "type": "boolean"
+                },
+                "databaseConnectionErrors": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
