@@ -1,6 +1,6 @@
 # Alkemi | Data Relay Service
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg?cacheSeconds=2592000) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Documentation](https://img.shields.io/badge/documentation-yes-brightgreen.svg)](https://alkemi.atlassian.net/wiki/spaces/ARCH/pages/12648485/Data+Relay+Service) [![Twitter: AlkemiOfficial](https://img.shields.io/twitter/follow/AlkemiOfficial.svg?style=social)](https://twitter.com/AlkemiOfficial)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/project-alkemi/alkemi-protocol) ![Built with Go](https://img.shields.io/badge/go-12.9-skyblue?style=flat&logo=go) [![Read the Docs](https://img.shields.io/badge/docs-yes-brightgreen.svg?logo=confluence)](https://alkemi.atlassian.net/wiki/spaces/ARCH/pages/93946093/Data+Relay+Service) [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square&logo=read-the-docs)](http://opensource.org/licenses/MIT)
 
 ---
 
