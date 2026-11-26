@@ -1,84 +1,54 @@
-# Alkemi | Data Relay Service
+# Data Relay Service
 
-![GitHub package.json version](https://img.shields.io/github/package-json/v/project-alkemi/alkemi-protocol) ![Built with Go](https://img.shields.io/badge/go-12.9-skyblue?style=flat&logo=go) [![Read the Docs](https://img.shields.io/badge/docs-yes-brightgreen.svg?logo=confluence)](https://alkemi.atlassian.net/wiki/spaces/ARCH/pages/93946093/Data+Relay+Service) [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square&logo=read-the-docs)](http://opensource.org/licenses/MIT)
+> Go service that relays completed-trade data from exchanges to oracles and a VWAP index over REST and WebSockets, with TLS and Redis.
+
+<p>
+<img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" />
+<img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis" />
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL" />
+<img src="https://img.shields.io/badge/Swagger-85EA2D?style=flat-square&logo=swagger&logoColor=black" alt="Swagger" />
+<img src="https://img.shields.io/badge/Sentry-362D59?style=flat-square&logo=sentry&logoColor=white" alt="Sentry" />
+</p>
+
+The relay layer of the platform. Exchange containers push completed trades to a Data Relay (DR), and the DR fans that data out to subscribed oracles and the VWAP [price-index-service](https://github.com/warbuxx87/price-index-service) over REST or WebSockets. Relays register themselves with the [discovery service](https://github.com/warbuxx87/dr-discovery-service) so oracles can find them, and they authenticate through the [switchboard](https://github.com/warbuxx87/switch-board-service).
+
+## Where it fits
+
+Part of Alkemi's distributed market-data platform: a set of Go microservices that collect completed trades from exchange containers, relay them to oracles and a VWAP price index, and settle results on-chain.
+
+```mermaid
+flowchart LR
+	EX[Exchange containers] -->|completed trades| DR[Data Relay Service]
+	SB[Switchboard Service] -. whitelist + service keys .-> DR
+	SB -. service keys .-> PI
+	DS[Discovery Service] -. relay registry .-> OR
+	DR -->|REST / WebSocket| PI[Price Index Service<br/>VWAP]
+	DR -->|REST / WebSocket| OR[Oracles / Book-keeper nodes]
+	OR -->|settlement votes| SC[(Settlement contract)]
+	ADM[Switchboard Dashboard] --> SB
+```
+
+## How it works
+
+- `cmd/data-relay-service` runs the TLS-enabled Echo server, and `cmd/data-relay-service-dev-client` is a test client.
+- `internal/app/data-relay-service/managers` handles subscriber management and fan-out, using Redis for pub/sub state.
+- Shared message types come from Alkemi's common message package.
+- Errors are reported to Sentry and logs go through logrus.
+
+## Stack
+
+Go, Redis, MySQL, Swagger, Sentry
+
+## Running locally
+
+```bash
+cp configs/config.json.example configs/config.json
+go run ./cmd/data-relay-service
+```
+
+## Credits
+
+Built at Alkemi by Raynaldo Rivera and Curtis Goolsby (2019), as part of the platform I founded and led.
 
 ---
-
-## Service Overview
-
-The Data Relay Service represents a cluster of micro-services that only have one function. This function is to relay the trade completion information to the BookKeeper Nodes and the Price Index Service as required.
-
-- This is done by using either rest or WebSockets to facilitate the data transfer. The BookKeeper Nodes will connect to the Data Relay Service to collect this information. Data Relay’s will be created as a micro-service that way we can have multiple data relays available for redundancy to the BookKeeper Nodes and global availability for Exchange Containers.
-
-## Latest Deployment URLS
-
-- [Data Relay Service API](https://relay.alkemi.tech/v1)
-- [Data Relay Dashboard](https://relay.alkemi.tech)
-  - User/Pass: admin/admin
-- [Service Health](http://status.alkemi.tech/service/data-relay-service)
-
-## Requirement
-
-An application configuration file must be present in `/configs/config.json`. If this file is not present, application defaults to an auto-generated `/configs/dev.json` configuration file.
-
-## Install
-
-    go build bitbucket.org/project-alkemi/data-relay-service/cmd/data-relay-service
-
-## Usage
-
-    go run bitbucket.org/project-alkemi/data-relay-service/cmd/data-relay-service
-
-## Run tests
-
-    go test bitbucket.org/project-alkemi/data-relay-service/cmd/data-relay-service
-
-## Author
-
-👤 **Alkemi**
-
-- Website: <https://alkemi.network>
-- Twitter: [@AlkemiOfficial](https://twitter.com/AlkemiOfficial)
-- Github: [@project-alkemi](https://github.com/project-alkemi)
-
-## 🤝 Contributing
-
-Contributions, issues and feature requests are welcome!
-
-Please be sure to abide by our [Code Of Conduct](CODE_OF_CONDUCT.md)
-
-Feel free to check [issues page](https://alkemi.atlassian.net/jira/software/projects/CD/boards/4).
-
-If you come across an issue with the Data Relay Service, do a search in the [Issues](https://alkemi.atlassian.net/jira/software/projects/CD/boards/4) tab of this repo to make sure it hasn't been reported before. Follow these steps to help us prevent duplicate issues and unnecessary notifications going to the many people watching this repo:
-
-- If the issue you found has been reported and is still open, and the details match your issue, give a "thumbs up" to the relevant posts in the issue thread to signal that you have the same issue. No further action is required on your part.
-- If the issue you found has been reported and is still open, but the issue is missing some details, you can add a comment to the issue thread describing the additional details.
-- If the issue you found has been reported but has been closed, you can comment on the closed issue thread and ask to have the issue reopened because you are still experiencing the issue. Alternatively, you can open a new issue, reference the closed issue by number or link, and state that you are still experiencing the issue. Provide any additional details in your post so we can better understand the issue and how to fix it.
-
-## 📝 License
-
-Copyright © 2020 [Alkemi Network](https://github.com/project-alkemi).
-
-This project is [MIT](https://opensource.org/licenses/MIT) licensed.
-
-    MIT License
-
-    Copyright (c) 2020 Alkemi
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+<sub>Part of <a href="https://github.com/warbuxx87">Ryan Breen's</a> work · <a href="https://www.linkedin.com/in/breen-ryan/">LinkedIn</a></sub>
